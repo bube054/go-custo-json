@@ -5,16 +5,42 @@ import "fmt"
 type TokenKind int
 
 const (
-	WhiteSpace TokenKind = iota
+	EOF TokenKind = iota
+	ILLEGAL
 )
 
-type TokenType struct {
-	TokenKind  TokenKind
-	TokenValue []byte
-	Line       int
-	Column     int
+func (t TokenKind) String() string {
+	m := map[TokenKind]string{
+		0: "EOF",
+		1: "ILLEGAL",
+	}
+
+	str := m[t]
+	return str
 }
 
-func (t *TokenType) String() string {
-	return fmt.Sprintf("{Kind: %d, Value: %q}", t.TokenKind, t.TokenValue)
+type Token struct {
+	Kind        TokenKind
+	Value       string
+	Line        int
+	StartColumn int
+}
+
+func (t *Token) String() string {
+	return fmt.Sprintf(
+		"Token{Kind: %s, Value: %q, Line: %d, StartColumn: %d}",
+		t.Kind,
+		t.Value,
+		t.Line,
+		t.StartColumn,
+	)
+}
+
+func NewToken(kind TokenKind, value []byte, line, start int) Token {
+	return Token{
+		Kind:        kind,
+		Value:       string(value),
+		Line:        line,
+		StartColumn: start,
+	}
 }

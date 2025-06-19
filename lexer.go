@@ -1,7 +1,8 @@
 package gocustojson
 
 type Lexer struct {
-	characters []byte
+	input  []byte
+	config *Config
 
 	currentLine    int
 	columnPosition int
@@ -12,12 +13,26 @@ type Lexer struct {
 	previousCharacter byte
 }
 
+func NewLexer(input string, cfg *Config) *Lexer {
+	l := &Lexer{input: []byte(input), config: cfg}
+	l.ConsumeCharacter()
+	return l
+}
+
 func (l *Lexer) ConsumeCharacter() {
-	l.currentCharacter = l.characters[l.currentPointer]
-	l.nextCharacter = l.characters[l.currentPointer+1]
+	if l.currentLine == 0 {
+		l.currentLine = 1
+	}
+
+	if len(l.input) == 0 {
+		return
+	}
+
+	l.currentCharacter = l.input[l.currentPointer]
+	l.nextCharacter = l.input[l.currentPointer+1]
 
 	if l.currentPointer > 0 {
-		l.previousCharacter = l.characters[l.currentPointer-1]
+		l.previousCharacter = l.input[l.currentPointer-1]
 	}
 
 	if IsNewLine(l.currentCharacter) {
@@ -30,6 +45,27 @@ func (l *Lexer) ConsumeCharacter() {
 	l.currentPointer++
 }
 
-func NewLexer() *Lexer {
-	return &Lexer{currentLine: 1}
+func (l *Lexer) Token() Token {
+	switch l.currentCharacter {
+	case '0', '\x00':
+		return NewToken(EOF, nil, l.currentLine, l.columnPosition)
+	default:
+		return NewToken(ILLEGAL, l.input[l.currentPointer:], l.currentLine, l.columnPosition)
+	}
+}
+
+func (l *Lexer) GenerateTokens() []Token {
+	tokens := []Token{}
+
+	for {
+		token := l.Token()
+
+		tokens = append(tokens, token)
+
+		if token.Kind == EOF || token.Kind == ILLEGAL {
+			break
+		}
+	}
+
+	return tokens
 }
