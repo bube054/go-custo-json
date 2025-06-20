@@ -42,7 +42,7 @@ func TestIsWhiteSpace(t *testing.T) {
 		{msg: "Valid carriage return, with AllowExtraWS", p1: '\x0D', p2: true, expected: true},
 		{msg: "Valid horizontal tab, with AllowExtraWS", p1: '\x09', p2: true, expected: true},
 
-		//  Additional whitespaces with AllowExtraWS
+		//  Additional whitespaces without AllowExtraWS
 		{msg: "Valid line tabulation, with AllowExtraWS", p1: '\x0B', p2: true, expected: true},
 		{msg: "Valid form feed, with AllowExtraWS", p1: '\x0C', p2: true, expected: true},
 		{msg: "Valid next line, with AllowExtraWS", p1: '\u0085', p2: true, expected: true},

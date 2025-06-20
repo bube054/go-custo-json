@@ -7,7 +7,6 @@ func IsNewLine(char byte) bool {
 // IsWhiteSpace reports whether a byte is a whitespace.
 func IsWhiteSpace(char byte, AllowExtraWS bool) bool {
 	switch char {
-	// space, line feed, carriage return, horizontal tab
 	case
 		'\x20', // space
 		'\x0A', // line feed

@@ -1,18 +1,23 @@
 package gocustojson
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type TokenKind int
 
 const (
 	EOF TokenKind = iota
 	ILLEGAL
+	WHITESPACE
 )
 
 func (t TokenKind) String() string {
 	m := map[TokenKind]string{
 		0: "EOF",
 		1: "ILLEGAL",
+		2: "WHITESPACE",
 	}
 
 	str := m[t]
@@ -20,27 +25,43 @@ func (t TokenKind) String() string {
 }
 
 type Token struct {
-	Kind        TokenKind
-	Value       string
-	Line        int
-	StartColumn int
+	Kind   TokenKind
+	Value  string
+	Line   int
+	Column int
 }
 
-func (t *Token) String() string {
+func (t Token) String() string {
 	return fmt.Sprintf(
-		"Token{Kind: %s, Value: %q, Line: %d, StartColumn: %d}",
+		"Token{Kind: %s, Value: %q, Line: %d, Column: %d}",
 		t.Kind,
 		t.Value,
 		t.Line,
-		t.StartColumn,
+		t.Column,
 	)
 }
 
-func NewToken(kind TokenKind, value []byte, line, start int) Token {
-	return Token{
-		Kind:        kind,
-		Value:       string(value),
-		Line:        line,
-		StartColumn: start,
+func NewToken(kind TokenKind, value []byte, line, start int, cb func()) Token {
+	if cb != nil {
+		cb()
 	}
+
+	return Token{
+		Kind:   kind,
+		Value:  string(value),
+		Line:   line,
+		Column: start,
+	}
+}
+
+type Tokens []Token
+
+func (t Tokens) String() string {
+	parts := make([]string, len(t))
+
+	for i, token := range t {
+		parts[i] = token.String()
+	}
+
+	return fmt.Sprintf("\n[\n%s\n]\n", strings.Join(parts, ",\n"))
 }
