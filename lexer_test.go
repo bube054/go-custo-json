@@ -1,7 +1,6 @@
 package gocustojson
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -62,9 +61,20 @@ func TestLexWhiteSpace(t *testing.T) {
 		{msg: "Lex ws, no-break space with AllowExtraWS", input: []byte{0xA0}, expected: []Token{NewToken(WHITESPACE, []byte{0xA0}, 1, 0, nil), NewToken(EOF, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
 	}
 
-	var b byte = 133
-	// fmt.Printf("%q\n", b)
-	c := "\\"
-	fmt.Println(string(b) == c)
+	RunLexerTests(t, tests)
+}
+
+func TestLexComment(t *testing.T) {
+	var tests = []LexerTest{
+		// lex line comment without AllowLineComments
+		{msg: "Lex valid line comment without AllowLineComments", input: []byte("//\n"), expected: []Token{NewToken(ILLEGAL, []byte("//\n"), 1, 0, nil)}, cfg: NewConfig(WithAllowLineComments(false))},
+		{msg: "Lex invalid line comment without AllowLineComments", input: []byte("//"), expected: []Token{NewToken(ILLEGAL, []byte("//"), 1, 0, nil)}, cfg: NewConfig(WithAllowLineComments(false))},
+
+		// lex line comment with AllowLineComments
+		{msg: "Lex line comment with AllowLineComments", input: []byte("//\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("//\n"), 1, 0, nil), NewToken(EOF, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Lex invalid line comment with AllowLineComments", input: []byte("//"), expected: []Token{NewToken(ILLEGAL, []byte("//"), 1, 0, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Lex line comment with AllowLineComments and text", input: []byte("// This is a line comment\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("// This is a line comment\n"), 1, 0, nil), NewToken(EOF, nil, 1, 26, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+	}
+
 	RunLexerTests(t, tests)
 }

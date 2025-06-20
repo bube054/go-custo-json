@@ -37,6 +37,8 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) Token() Token {
 	switch l.char {
+
+	// Lexing white space starts here
 	case
 		32, // space
 		10, // line feed
@@ -53,6 +55,38 @@ func (l *Lexer) Token() Token {
 		} else {
 			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 		}
+	// Lexing white space ends here
+
+	// Lexing comment starts here
+	case 47: // forward slash
+		// char := l.char
+		pos := l.pos
+		nextChar := l.peek()
+		switch nextChar {
+		case 47:
+			if !l.config.AllowLineComments {
+				return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+			}
+
+			for !IsNewLine(l.char) && l.char != 0 {
+				l.readChar()
+			}
+
+			if l.char == 0 {
+				return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+			}
+
+			return NewToken(LINE_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
+
+		// case 42: // asterisk
+		// 	if !l.config.AllowBlockComments {
+		// 		return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+		// 	}
+		default:
+			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+		}
+	// Lexing comment ends here
+
 	case 0:
 		// fmt.Println("3")
 		return NewToken(EOF, nil, l.line, l.pos, nil)
@@ -76,6 +110,14 @@ func (l *Lexer) GenerateTokens() Tokens {
 	}
 
 	return tokens
+}
+
+func (l *Lexer) peek() byte {
+	if l.readPos > len(l.input)-1 {
+		return 0
+	} else {
+		return l.input[l.readPos]
+	}
 }
 
 // // Start current line at 1

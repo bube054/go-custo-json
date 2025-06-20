@@ -11,6 +11,8 @@ const (
 	EOF TokenKind = iota
 	ILLEGAL
 	WHITESPACE
+	LINE_COMMENT
+	BLOCK_COMMENT
 )
 
 func (t TokenKind) String() string {
@@ -18,6 +20,8 @@ func (t TokenKind) String() string {
 		0: "EOF",
 		1: "ILLEGAL",
 		2: "WHITESPACE",
+		3: "LINE_COMMENT",
+		4: "BLOCK_COMMENT",
 	}
 
 	str := m[t]
