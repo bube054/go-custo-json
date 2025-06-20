@@ -8,10 +8,7 @@ type Lexer struct {
 	pos     int
 	readPos int
 
-	// currentPointer    int
 	char byte
-	// nextCharacter     byte
-	// previousCharacter byte
 }
 
 func NewLexer(input []byte, cfg *Config) *Lexer {
@@ -59,7 +56,6 @@ func (l *Lexer) Token() Token {
 
 	// Lexing comment starts here
 	case 47: // forward slash
-		// char := l.char
 		pos := l.pos
 		nextChar := l.peek()
 		switch nextChar {
@@ -78,20 +74,31 @@ func (l *Lexer) Token() Token {
 
 			return NewToken(LINE_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
 
-		// case 42: // asterisk
-		// 	if !l.config.AllowBlockComments {
-		// 		return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
-		// 	}
+		case 42: // asterisk
+			if !l.config.AllowBlockComments {
+				return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+			}
+
+			for !(l.char == 47 && l.prev() == 42) && l.char != 0 {
+				l.readChar()
+			}
+
+			if l.char == 0 {
+				return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+			}
+
+			return NewToken(BLOCK_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
 		default:
 			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 		}
 	// Lexing comment ends here
 
+	// Lexing string ends here
+	// Lexing string ends here
+
 	case 0:
-		// fmt.Println("3")
 		return NewToken(EOF, nil, l.line, l.pos, nil)
 	default:
-		// fmt.Println("4")
 		return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 	}
 }
@@ -113,10 +120,18 @@ func (l *Lexer) GenerateTokens() Tokens {
 }
 
 func (l *Lexer) peek() byte {
-	if l.readPos > len(l.input)-1 {
+	if l.readPos > (len(l.input) - 1) {
 		return 0
 	} else {
 		return l.input[l.readPos]
+	}
+}
+
+func (l *Lexer) prev() byte {
+	if (l.pos - 1) < 0 {
+		return 0
+	} else {
+		return l.input[l.pos-1]
 	}
 }
 

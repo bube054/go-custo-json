@@ -71,9 +71,18 @@ func TestLexComment(t *testing.T) {
 		{msg: "Lex invalid line comment without AllowLineComments", input: []byte("//"), expected: []Token{NewToken(ILLEGAL, []byte("//"), 1, 0, nil)}, cfg: NewConfig(WithAllowLineComments(false))},
 
 		// lex line comment with AllowLineComments
-		{msg: "Lex line comment with AllowLineComments", input: []byte("//\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("//\n"), 1, 0, nil), NewToken(EOF, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Lex valid line comment with AllowLineComments", input: []byte("//\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("//\n"), 1, 0, nil), NewToken(EOF, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
 		{msg: "Lex invalid line comment with AllowLineComments", input: []byte("//"), expected: []Token{NewToken(ILLEGAL, []byte("//"), 1, 0, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
-		{msg: "Lex line comment with AllowLineComments and text", input: []byte("// This is a line comment\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("// This is a line comment\n"), 1, 0, nil), NewToken(EOF, nil, 1, 26, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Lex valid line comment with AllowLineComments and text", input: []byte("// This is a line comment\n"), expected: []Token{NewToken(LINE_COMMENT, []byte("// This is a line comment\n"), 1, 0, nil), NewToken(EOF, nil, 1, 26, nil)}, cfg: NewConfig(WithAllowLineComments(true))},
+
+		// lex block comment without AllowBlockComments
+		{msg: "Lex valid block comment without AllowBlockComments", input: []byte("/**/"), expected: []Token{NewToken(ILLEGAL, []byte("/**/"), 1, 0, nil)}, cfg: NewConfig(WithAllowBlockComments(false))},
+		{msg: "Lex invalid block comment without AllowBlockComments", input: []byte("/*"), expected: []Token{NewToken(ILLEGAL, []byte("/*"), 1, 0, nil)}, cfg: NewConfig(WithAllowBlockComments(false))},
+
+		// lex block comment with AllowBlockComments
+		{msg: "Lex valid block comment with AllowBlockComments", input: []byte("/**/"), expected: []Token{NewToken(BLOCK_COMMENT, []byte("/**/"), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowBlockComments(true))},
+		{msg: "Lex invalid block comment with AllowBlockComments", input: []byte("/*"), expected: []Token{NewToken(ILLEGAL, []byte("/*"), 1, 0, nil)}, cfg: NewConfig(WithAllowBlockComments(true))},
+		{msg: "Lex valid block comment with AllowBlockComments", input: []byte("/* This is a block comment*/"), expected: []Token{NewToken(BLOCK_COMMENT, []byte("/* This is a block comment*/"), 1, 0, nil), NewToken(EOF, nil, 1, 28, nil)}, cfg: NewConfig(WithAllowBlockComments(true))},
 	}
 
 	RunLexerTests(t, tests)
