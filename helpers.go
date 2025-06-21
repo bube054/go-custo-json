@@ -23,3 +23,16 @@ func IsWhiteSpace(char byte, AllowExtraWS bool) bool {
 		return false
 	}
 }
+
+// IsWhiteSpace reports whether a byte slice is a hex.
+func Is4HexDigits(chars [4]byte) bool {
+	for _, char := range chars {
+		if (char >= 48 && char <= 57) || (char >= 65 && char <= 70) || (char >= 97 && char <= 102) {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}

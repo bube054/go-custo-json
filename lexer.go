@@ -33,7 +33,12 @@ func (l *Lexer) readChar() {
 }
 
 func (l *Lexer) Token() Token {
-	switch l.char {
+	pos := l.pos
+	char := l.char
+	nextChar := l.peek()
+	// prev := l.prev()
+
+	switch char {
 
 	// Lexing white space starts here
 	case
@@ -56,8 +61,7 @@ func (l *Lexer) Token() Token {
 
 	// Lexing comment starts here
 	case 47: // forward slash
-		pos := l.pos
-		nextChar := l.peek()
+
 		switch nextChar {
 		case 47:
 			if !l.config.AllowLineComments {
@@ -69,7 +73,7 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.char == 0 {
-				return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+				return NewToken(LINE_COMMENT, l.input[pos:], l.line, pos, nil)
 			}
 
 			return NewToken(LINE_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
@@ -91,11 +95,66 @@ func (l *Lexer) Token() Token {
 		default:
 			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 		}
+
 	// Lexing comment ends here
 
-	// Lexing string ends here
-	// Lexing string ends here
+	// Lexing string starts here
+	case
+		34, // double quotes
+		39: // single quote
+		if l.char == 39 && !l.config.AllowSingleQuotes {
+			return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+		}
 
+		l.readChar()
+
+		for {
+			next := l.peek()
+			prev := l.prev()
+
+			if l.char == 0 {
+				break
+			}
+
+			if l.char == char && prev != 92 {
+				break
+			}
+
+			if l.char == 92 && prev != l.char {
+				switch next {
+				case char:
+				case 92: // backward slash
+				case 47: // forward slash
+				case 98: // b
+				case 102: // f
+				case 110: // n
+				case 114: // r
+				case 116: // t
+				case 117: // u
+					h1 := l.peekBy(2)
+					h2 := l.peekBy(3)
+					h3 := l.peekBy(4)
+					h4 := l.peekBy(5)
+
+					if !Is4HexDigits([4]byte{h1, h2, h3, h4}) {
+						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+					}
+
+				default:
+					return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+				}
+			}
+
+			l.readChar()
+		}
+
+		if l.char == 0 {
+			return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+		}
+
+		// fmt.Printf("%+v\n", l)
+		return NewToken(STRING, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		// Lexing string ends here
 	case 0:
 		return NewToken(EOF, nil, l.line, l.pos, nil)
 	default:
@@ -135,41 +194,12 @@ func (l *Lexer) prev() byte {
 	}
 }
 
-// // Start current line at 1
-// if l.line == 0 {
-// 	l.line = 1
-// }
+func (l *Lexer) peekBy(target int) byte {
+	pos := l.pos + target
 
-// // Do not consume nothing
-// if len(l.input) == 0 {
-// 	return
-// }
-
-// // Nothing to consume again
-// if l.currentPointer > len(l.input)-1 {
-// 	l.currentCharacter = 0
-// 	return
-// }
-
-// l.currentCharacter = l.input[l.currentPointer]
-
-// if l.currentPointer+1 < len(l.input)-1 {
-// 	l.nextCharacter = l.input[l.currentPointer+1]
-// } else {
-// 	l.nextCharacter = 0
-// }
-
-// if l.currentPointer > 0 {
-// 	l.previousCharacter = l.input[l.currentPointer-1]
-// } else {
-// 	l.previousCharacter = 0
-// }
-
-// if IsNewLine(l.currentCharacter) {
-// 	l.line++
-// 	l.pos = 0
-// } else {
-// 	l.pos++
-// }
-
-// l.currentPointer++
+	if pos > (len(l.input) - 1) {
+		return 0
+	} else {
+		return l.input[pos]
+	}
+}

@@ -18,6 +18,8 @@ type Config struct {
 
 	AllowLineComments  bool
 	AllowBlockComments bool
+
+	AllowMalformedInput bool
 }
 
 func NewConfig(opts ...func(*Config)) *Config {
@@ -105,5 +107,11 @@ func WithAllowLineComments(allow bool) func(*Config) {
 func WithAllowBlockComments(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowBlockComments = allow
+	}
+}
+
+func withMalformedInput(allow bool) func(*Config) {
+	return func(c *Config) {
+		c.AllowMalformedInput = allow
 	}
 }

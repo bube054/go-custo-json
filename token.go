@@ -13,6 +13,7 @@ const (
 	WHITESPACE
 	LINE_COMMENT
 	BLOCK_COMMENT
+	STRING
 )
 
 func (t TokenKind) String() string {
@@ -22,6 +23,7 @@ func (t TokenKind) String() string {
 		2: "WHITESPACE",
 		3: "LINE_COMMENT",
 		4: "BLOCK_COMMENT",
+		5: "STRING",
 	}
 
 	str := m[t]
@@ -37,7 +39,7 @@ type Token struct {
 
 func (t Token) String() string {
 	return fmt.Sprintf(
-		"Token{Kind: %s, Value: %q, Line: %d, Column: %d}",
+		"Token{Kind: %s, Value: %s, Line: %d, Column: %d}",
 		t.Kind,
 		t.Value,
 		t.Line,
