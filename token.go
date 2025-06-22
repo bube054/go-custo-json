@@ -14,6 +14,7 @@ const (
 	LINE_COMMENT
 	BLOCK_COMMENT
 	STRING
+	IDENT
 )
 
 func (t TokenKind) String() string {
@@ -24,6 +25,7 @@ func (t TokenKind) String() string {
 		3: "LINE_COMMENT",
 		4: "BLOCK_COMMENT",
 		5: "STRING",
+		6: "IDENT",
 	}
 
 	str := m[t]

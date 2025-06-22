@@ -1,5 +1,7 @@
 package gocustojson
 
+import "fmt"
+
 type Lexer struct {
 	input  []byte
 	config *Config
@@ -110,12 +112,19 @@ func (l *Lexer) Token() Token {
 		for {
 			next := l.peek()
 			prev := l.prev()
+			prevBy2 := l.prevBy(2)
 
 			if l.char == 0 {
 				break
 			}
 
+			// end if e.g `"\""` or `'\''`
 			if l.char == char && prev != 92 {
+				break
+			}
+
+			// end if e.g `"\\"` or `'\\'`
+			if l.char == char && prev == 92 && prevBy2 == 92 {
 				break
 			}
 
@@ -154,6 +163,7 @@ func (l *Lexer) Token() Token {
 		}
 
 		if l.char == 0 {
+			fmt.Println("BINGO")
 			return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
 		}
 
@@ -163,6 +173,18 @@ func (l *Lexer) Token() Token {
 	case 0:
 		return NewToken(EOF, nil, l.line, l.pos, nil)
 	default:
+		// // Lexing ident starts here
+
+		// for !IsWhiteSpace(l.char, l.config.AllowExtraWS) {
+		// 	l.readChar()
+		// }
+
+		// if IsJSIdentifier(l.input[pos:l.readPos]) {
+		// 	return NewToken(IDENT, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
+		// }
+
+		// // Lexing ident ends here
+
 		return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 	}
 }
@@ -191,6 +213,16 @@ func (l *Lexer) peek() byte {
 	}
 }
 
+func (l *Lexer) peekBy(target int) byte {
+	pos := l.pos + target
+
+	if pos > (len(l.input) - 1) {
+		return 0
+	} else {
+		return l.input[pos]
+	}
+}
+
 func (l *Lexer) prev() byte {
 	if (l.pos - 1) < 0 {
 		return 0
@@ -199,10 +231,10 @@ func (l *Lexer) prev() byte {
 	}
 }
 
-func (l *Lexer) peekBy(target int) byte {
-	pos := l.pos + target
+func (l *Lexer) prevBy(target int) byte {
+	pos := l.pos - target
 
-	if pos > (len(l.input) - 1) {
+	if pos < 0 {
 		return 0
 	} else {
 		return l.input[pos]
