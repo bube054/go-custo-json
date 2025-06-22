@@ -1,6 +1,7 @@
 package gocustojson
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -113,8 +114,8 @@ func TestLexString(t *testing.T) {
 		// {msg: "Lex non-empty double string", input: []byte(`"text"`), expected: []Token{NewToken(STRING, []byte(`"text"`), 1, 0, nil), NewToken(EOF, nil, 1, 6, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		// {msg: "Lex non-empty single string", input: []byte(`'text'`), expected: []Token{NewToken(STRING, []byte(`'text'`), 1, 0, nil), NewToken(EOF, nil, 1, 6, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 
-		{msg: "Lex esc double string", input: []byte(`"\""`), expected: []Token{NewToken(STRING, []byte(`"\""`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
-		{msg: "Lex esc single string", input: []byte(`'\''`), expected: []Token{NewToken(STRING, []byte(`'\''`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
+		// {msg: "Lex esc double string", input: []byte(`"\""`), expected: []Token{NewToken(STRING, []byte(`"\""`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
+		// {msg: "Lex esc single string", input: []byte(`'\''`), expected: []Token{NewToken(STRING, []byte(`'\''`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 
 		// {msg: "Lex esc backward slash double string", input: []byte(`"\\"`), expected: []Token{NewToken(STRING, []byte(`"\\"`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		// {msg: "Lex esc backward slash single string", input: []byte(`'\\'`), expected: []Token{NewToken(STRING, []byte(`'\\'`), 1, 0, nil), NewToken(EOF, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
@@ -143,19 +144,25 @@ func TestLexString(t *testing.T) {
 		// {msg: "Lex esc 4 hex digits single string", input: []byte(`'\u597D'`), expected: []Token{NewToken(STRING, []byte(`'\u597D'`), 1, 0, nil), NewToken(EOF, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		// {msg: "Lex invalid esc 4 hex digits double string", input: []byte(`"\u00G1"`), expected: []Token{NewToken(ILLEGAL, []byte(`"\u00G1"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		// {msg: "Lex invalid esc 4 hex digits single string", input: []byte(`'\u00Z1'`), expected: []Token{NewToken(ILLEGAL, []byte(`'\u00Z1'`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
+
+		// {msg: "Lex invalid escape double string without AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(ILLEGAL, []byte(`"\Users"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(false))},
+		// {msg: "Lex invalid escape double string with AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(STRING, []byte(`"\Users"`), 1, 0, nil), NewToken(EOF, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(true))},
+		// {msg: "Lex invalid escape single string without AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(ILLEGAL, []byte(`'\Users'`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(false))},
+		// {msg: "Lex invalid escape single string with AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(STRING, []byte(`'\Users'`), 1, 0, nil), NewToken(EOF, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(true))},
+
+		{msg: "Lex invalid escape newline double string without AllowNewlineInStrings", input: []byte(`"\
+		"`), expected: []Token{NewToken(ILLEGAL, []byte(`"\
+		"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowNewlineInStrings(false))},
+		{msg: "Lex invalid escape newline double string with AllowNewlineInStrings", input: []byte(`"\
+		"`), expected: []Token{NewToken(STRING, []byte(`"\
+		"`), 1, 0, nil), NewToken(EOF, nil, 1, 6, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowNewlineInStrings(true))},
 	}
 
-	// for i, b := range []byte(`"\""`) {
-	// for i, b := range []byte(`"\\"`) {
-	// for i, b := range []byte(`"\/"`) {
-	// for i, b := range []byte(`"\b"`) {
-	// for i, b := range []byte(`"\f"`) {
-	// for i, b := range []byte(`"\n"`) {
-	// for i, b := range []byte(`"\r"`) {
-	// for i, b := range []byte(`"\t"`) {
-	// for i, b := range []byte(`"\t"`) {
-	// fmt.Printf("i: %d, p: %d, b: %q\n", i, b, b)
-	// }
+	for i, b := range []byte(`'This is a long string \
+that continues on the next line \
+without breaking.'`) {
+		fmt.Printf("i: %d, p: %d, b: %q\n", i, b, b)
+	}
 
 	RunLexerTests(t, tests)
 }

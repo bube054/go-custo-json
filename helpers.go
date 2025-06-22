@@ -1,5 +1,10 @@
 package gocustojson
 
+import (
+	"unicode"
+	"unicode/utf8"
+)
+
 func IsNewLine(char byte) bool {
 	return char == '\n'
 }
@@ -35,4 +40,28 @@ func Is4HexDigits(chars [4]byte) bool {
 	}
 
 	return true
+}
+
+func IsJSIdentifier(input []byte) bool {
+	str := string(input)
+	for i, char := range str {
+		isDollarOrUnderscore := char == '$' || char == '_'
+		if i == 0 {
+			if !(unicode.IsLetter(char) || isDollarOrUnderscore) {
+				return false
+			}
+		} else {
+			if !(unicode.IsLetter(char) ||
+				unicode.IsDigit(char) ||
+				isDollarOrUnderscore ||
+				isJSCombiningMark(char)) {
+				return false
+			}
+		}
+	}
+	return utf8.Valid(input)
+}
+
+func isJSCombiningMark(r rune) bool {
+	return unicode.In(r, unicode.Mn, unicode.Mc)
 }

@@ -68,10 +68,13 @@ func TestIs4HexDigits(t *testing.T) {
 		p1       [4]byte
 		expected bool
 	}{
+		// Valid 4 hex digits
 		{msg: "Valid hex only digits", p1: [4]byte{48, 48, 51, 49}, expected: true},
 		{msg: "Valid hex uppercase", p1: [4]byte{'A', 'B', 'C', 'F'}, expected: true},
 		{msg: "Valid hex lowercase", p1: [4]byte{'a', 'b', 'c', 'f'}, expected: true},
 		{msg: "Mixed valid hex", p1: [4]byte{'0', 'F', 'a', '9'}, expected: true},
+
+		// Invalid 4 hex digits
 		{msg: "Invalid non-hex character", p1: [4]byte{'0', 'G', 'a', '9'}, expected: false},
 		{msg: "All invalid", p1: [4]byte{'g', 'h', 'z', '!'}, expected: false},
 		{msg: "Edge case: just below range", p1: [4]byte{'/', 'A', 'B', 'C'}, expected: false},
@@ -81,6 +84,39 @@ func TestIs4HexDigits(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
 			got := Is4HexDigits(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}
+
+func TestIsJSIdentifier(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       []byte
+		expected bool
+	}{
+		// Valid js indent
+		{msg: "Latin letter with accent", p1: []byte("café"), expected: true},
+		{msg: "German umlaut", p1: []byte("über"), expected: true},
+		{msg: "'ï' is a Unicode letter", p1: []byte("naïve"), expected: true},
+		{msg: "Cyrillic (Russian)", p1: []byte("привет"), expected: true},
+		{msg: "Greek", p1: []byte("κόσμος"), expected: true},
+		{msg: "Chinese (means \"variable\")", p1: []byte("变量"), expected: true},
+		{msg: "Arabic (means \"variable\")", p1: []byte("متغير"), expected: true},
+		{msg: "Hindi (Devanagari script)", p1: []byte("फ़ाइल"), expected: true},
+
+		// Invalid js indent
+		{msg: "starts with a digit", p1: []byte("1variable"), expected: false},
+		{msg: "hyphen is not allowed", p1: []byte("var-name"), expected: false},
+		{msg: "emoji is *not* a letter", p1: []byte("💻"), expected: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := IsJSIdentifier(test.p1)
 
 			if got != test.expected {
 				t.Errorf("got %t, expected %t", got, test.expected)

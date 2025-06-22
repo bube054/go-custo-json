@@ -36,7 +36,6 @@ func (l *Lexer) Token() Token {
 	pos := l.pos
 	char := l.char
 	nextChar := l.peek()
-	// prev := l.prev()
 
 	switch char {
 
@@ -139,9 +138,15 @@ func (l *Lexer) Token() Token {
 					if !Is4HexDigits([4]byte{h1, h2, h3, h4}) {
 						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
 					}
+				case 10: // new line
+					if !l.config.AllowNewlineInStrings {
+						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+					}
 
 				default:
-					return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+					if !l.config.AllowEscapeChars {
+						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+					}
 				}
 			}
 
@@ -154,7 +159,8 @@ func (l *Lexer) Token() Token {
 
 		// fmt.Printf("%+v\n", l)
 		return NewToken(STRING, l.input[pos:l.readPos], l.line, pos, l.readChar)
-		// Lexing string ends here
+	// Lexing string ends here
+
 	case 0:
 		return NewToken(EOF, nil, l.line, l.pos, nil)
 	default:

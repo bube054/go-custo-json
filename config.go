@@ -9,6 +9,7 @@ type Config struct {
 	AllowNegInfinity      bool
 	AllowNaN              bool
 
+	AllowUnQuoted         bool
 	AllowSingleQuotes     bool
 	AllowNewlineInStrings bool
 	AllowEscapeChars      bool
