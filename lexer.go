@@ -157,7 +157,6 @@ func (l *Lexer) Token() Token {
 			return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
 		}
 
-		// fmt.Printf("%+v\n", l)
 		return NewToken(STRING, l.input[pos:l.readPos], l.line, pos, l.readChar)
 	// Lexing string ends here
 
