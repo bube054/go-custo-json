@@ -5,8 +5,7 @@ type Config struct {
 
 	AllowHexNumbers       bool
 	AllowPointEdgeNumbers bool
-	AllowPosInfinity      bool
-	AllowNegInfinity      bool
+	AllowInfinity         bool
 	AllowNaN              bool
 
 	AllowUnquoted         bool
@@ -51,15 +50,9 @@ func WithAllowPointEdgeNumbers(allow bool) func(*Config) {
 	}
 }
 
-func WithAllowPosInfinity(allow bool) func(*Config) {
+func WithAllowInfinity(allow bool) func(*Config) {
 	return func(c *Config) {
-		c.AllowPosInfinity = allow
-	}
-}
-
-func WithAllowNegInfinity(allow bool) func(*Config) {
-	return func(c *Config) {
-		c.AllowNegInfinity = allow
+		c.AllowInfinity = allow
 	}
 }
 

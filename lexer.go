@@ -58,6 +58,62 @@ func (l *Lexer) Token() Token {
 		}
 	// Lexing white space ends here
 
+	// Lexing null starts here
+	case
+		110: // n
+		u := l.peekBy(1)
+		l1 := l.peekBy(2)
+		l2 := l.peekBy(3)
+
+		if u == 117 && l1 == 108 && l2 == l1 {
+			l.readChar()
+			l.readChar()
+			l.readChar()
+
+			return NewToken(NULL, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		}
+
+		return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+	// Lexing null ends here
+
+	// Lexing true starts here
+	case
+		116: // t
+		r := l.peekBy(1)
+		u := l.peekBy(2)
+		e := l.peekBy(3)
+
+		if r == 114 && u == 117 && e == 101 {
+			l.readChar()
+			l.readChar()
+			l.readChar()
+
+			return NewToken(TRUE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		}
+
+		return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+	// Lexing true ends here
+
+	// Lexing false starts here
+	case
+		102: // f
+		a := l.peekBy(1)
+		l1 := l.peekBy(2)
+		s := l.peekBy(3)
+		e := l.peekBy(4)
+
+		if a == 97 && l1 == 108 && s == 115 && e == 101 {
+			l.readChar()
+			l.readChar()
+			l.readChar()
+			l.readChar()
+
+			return NewToken(FALSE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		}
+
+		return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+	// Lexing false ends here
+
 	// Lexing comment starts here
 	case 47: // forward slash
 

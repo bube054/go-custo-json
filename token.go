@@ -24,15 +24,16 @@ const (
 
 func (t TokenKindType) String() string {
 	m := map[TokenKindType]string{
-		0: "STRING_VALUE",
-		1: "IDENT",
-		2: "INTEGER",
-		3: "FLOAT",
-		4: "SCI_NOT_INT",
-		5: "SCI_NOT_FLT",
-		6: "HEX",
-		7: "INF",
-		8: "NaN",
+		0: "NONE",
+		1: "STRING_VALUE",
+		2: "IDENT",
+		3: "INTEGER",
+		4: "FLOAT",
+		5: "SCI_NOT_INT",
+		6: "SCI_NOT_FLT",
+		7: "HEX",
+		8: "INF",
+		9: "NaN",
 	}
 
 	str := m[t]
@@ -49,6 +50,9 @@ const (
 	BLOCK_COMMENT
 	STRING
 	NUMBER
+	NULL
+	TRUE
+	FALSE
 )
 
 func (t TokenKind) String() string {
@@ -59,6 +63,10 @@ func (t TokenKind) String() string {
 		3: "LINE_COMMENT",
 		4: "BLOCK_COMMENT",
 		5: "STRING",
+		6: "NUMBER",
+		7: "NULL",
+		8: "TRUE",
+		9: "FALSE",
 	}
 
 	str := m[t]
