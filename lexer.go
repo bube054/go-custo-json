@@ -45,16 +45,16 @@ func (l *Lexer) Token() Token {
 		10, // line feed
 		13, // carriage return
 		9:  // horizontal return
-		return NewToken(WHITESPACE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
+		return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
 	case
 		11,  // line tabulation
 		12,  // form feed
 		133, // next line
 		160: // no break space
 		if l.config.AllowExtraWS {
-			return NewToken(WHITESPACE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
+			return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
 		} else {
-			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+			return NewToken(ILLEGAL, NONE, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 		}
 	// Lexing white space ends here
 
@@ -64,7 +64,7 @@ func (l *Lexer) Token() Token {
 		switch nextChar {
 		case 47:
 			if !l.config.AllowLineComments {
-				return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+				return NewToken(ILLEGAL, NONE, l.input[l.pos:], l.line, pos, nil)
 			}
 
 			for !IsNewLine(l.char) && l.char != 0 {
@@ -72,14 +72,14 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.char == 0 {
-				return NewToken(LINE_COMMENT, l.input[pos:], l.line, pos, nil)
+				return NewToken(LINE_COMMENT, NONE, l.input[pos:], l.line, pos, nil)
 			}
 
-			return NewToken(LINE_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
+			return NewToken(LINE_COMMENT, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
 
 		case 42: // asterisk
 			if !l.config.AllowBlockComments {
-				return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+				return NewToken(ILLEGAL, NONE, l.input[l.pos:], l.line, pos, nil)
 			}
 
 			for !(l.char == 47 && l.prev() == 42) && l.char != 0 {
@@ -87,12 +87,12 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.char == 0 {
-				return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 			}
 
-			return NewToken(BLOCK_COMMENT, l.input[pos:l.readPos], l.line, pos, l.readChar)
+			return NewToken(BLOCK_COMMENT, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
 		default:
-			return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+			return NewToken(ILLEGAL, NONE, l.input[l.pos:l.readPos], l.line, l.pos, nil)
 		}
 
 	// Lexing comment ends here
@@ -102,7 +102,7 @@ func (l *Lexer) Token() Token {
 		34, // double quotes
 		39: // single quote
 		if l.char == 39 && !l.config.AllowSingleQuotes {
-			return NewToken(ILLEGAL, l.input[l.pos:], l.line, pos, nil)
+			return NewToken(ILLEGAL, NONE, l.input[l.pos:], l.line, pos, nil)
 		}
 
 		l.readChar()
@@ -143,16 +143,16 @@ func (l *Lexer) Token() Token {
 					h4 := l.peekBy(5)
 
 					if !Is4HexDigits([4]byte{h1, h2, h3, h4}) {
-						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+						return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 					}
 				case 10: // new line
 					if !l.config.AllowNewlineInStrings {
-						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+						return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 					}
 
 				default:
 					if !l.config.AllowEscapeChars {
-						return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+						return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 					}
 				}
 			}
@@ -161,14 +161,14 @@ func (l *Lexer) Token() Token {
 		}
 
 		if l.char == 0 {
-			return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+			return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 		}
 
-		return NewToken(STRING, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		return NewToken(STRING, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
 	// Lexing string ends here
 
 	case 0:
-		return NewToken(EOF, nil, l.line, l.pos, nil)
+		return NewToken(EOF, NONE, nil, l.line, l.pos, nil)
 	default:
 
 		// Lexing ident starts here
@@ -177,11 +177,11 @@ func (l *Lexer) Token() Token {
 		}
 
 		if l.config.AllowUnquoted && IsJSIdentifier(l.input[pos:l.pos]) {
-			return NewToken(IDENT, l.input[pos:l.pos], l.line, pos, nil)
+			return NewToken(STRING, IDENT, l.input[pos:l.pos], l.line, pos, nil)
 		}
 		// Lexing ident ends here
 
-		return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
+		return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 	}
 }
 

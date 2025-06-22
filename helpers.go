@@ -81,3 +81,7 @@ func IsPossibleJSIdentifier(b byte) bool {
 
 	return false
 }
+
+func IsPossibleNumber(b byte) bool {
+	return true
+}

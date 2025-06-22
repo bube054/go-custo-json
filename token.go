@@ -5,6 +5,40 @@ import (
 	"strings"
 )
 
+type TokenKindType int
+
+const (
+	NONE TokenKindType = iota
+
+	STRING_VALUE
+	IDENT
+
+	INTEGER     //  positive or negative
+	FLOAT       //  positive or negative
+	SCI_NOT_INT //  positive or negative sign/expo
+	SCI_NOT_FLT //  positive or negative sign/expo
+	HEX         //  positive or negative
+	INF         //  positive or negative
+	NaN         //  positive or negative
+)
+
+func (t TokenKindType) String() string {
+	m := map[TokenKindType]string{
+		0: "STRING_VALUE",
+		1: "IDENT",
+		2: "INTEGER",
+		3: "FLOAT",
+		4: "SCI_NOT_INT",
+		5: "SCI_NOT_FLT",
+		6: "HEX",
+		7: "INF",
+		8: "NaN",
+	}
+
+	str := m[t]
+	return str
+}
+
 type TokenKind int
 
 const (
@@ -14,7 +48,7 @@ const (
 	LINE_COMMENT
 	BLOCK_COMMENT
 	STRING
-	IDENT
+	NUMBER
 )
 
 func (t TokenKind) String() string {
@@ -25,7 +59,6 @@ func (t TokenKind) String() string {
 		3: "LINE_COMMENT",
 		4: "BLOCK_COMMENT",
 		5: "STRING",
-		6: "IDENT",
 	}
 
 	str := m[t]
@@ -33,32 +66,35 @@ func (t TokenKind) String() string {
 }
 
 type Token struct {
-	Kind   TokenKind
-	Value  string
-	Line   int
-	Column int
+	Kind     TokenKind
+	KindType TokenKindType
+	Value    string
+	Line     int
+	Column   int
 }
 
 func (t Token) String() string {
 	return fmt.Sprintf(
-		"Token{Kind: %s, Value: %s, Line: %d, Column: %d}",
+		"Token{Kind: %s, KindType: %s, Value: %s, Line: %d, Column: %d}",
 		t.Kind,
+		t.KindType,
 		t.Value,
 		t.Line,
 		t.Column,
 	)
 }
 
-func NewToken(kind TokenKind, value []byte, line, start int, cb func()) Token {
+func NewToken(kind TokenKind, kindType TokenKindType, value []byte, line, start int, cb func()) Token {
 	if cb != nil {
 		cb()
 	}
 
 	return Token{
-		Kind:   kind,
-		Value:  string(value),
-		Line:   line,
-		Column: start,
+		Kind:     kind,
+		KindType: kindType,
+		Value:    string(value),
+		Line:     line,
+		Column:   start,
 	}
 }
 
