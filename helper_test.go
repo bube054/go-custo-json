@@ -124,3 +124,33 @@ func TestIsJSIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPossibleJSIdentifier(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       byte
+		expected bool
+	}{
+		// Valid possible js indent
+		{msg: "dollar sign", p1: '$', expected: true},
+		{msg: "underscore", p1: '_', expected: true},
+		{msg: "digit", p1: '8', expected: true},
+		{msg: "lowercase letter", p1: 'b', expected: true},
+		{msg: "upper letter", p1: 'F', expected: true},
+		{msg: "unicode letter", p1: 'ï', expected: true},
+
+		// Invalid possible js indent
+		{msg: "space", p1: ' ', expected: false},
+		{msg: "nothing", p1: 0, expected: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := IsPossibleJSIdentifier(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}

@@ -148,3 +148,18 @@ func TestLexString(t *testing.T) {
 
 	RunLexerTests(t, tests)
 }
+
+func TestLexIdent(t *testing.T) {
+	var tests = []LexerTest{
+		// lex ident without AllowUnquoted
+		{msg: "Lex valid ident without AllowUnquoted", input: []byte("ident"), expected: []Token{NewToken(ILLEGAL, []byte("ident"), 1, 0, nil)}, cfg: NewConfig(WithAllowUnquoted(false))},
+		{msg: "Lex invalid ident without AllowUnquoted", input: []byte("1ident"), expected: []Token{NewToken(ILLEGAL, []byte("1ident"), 1, 0, nil)}, cfg: NewConfig(WithAllowUnquoted(false))},
+
+		// lex ident with AllowUnquoted
+		{msg: "Lex valid ident with AllowUnquoted", input: []byte("ident"), expected: []Token{NewToken(IDENT, []byte("ident"), 1, 0, nil), NewToken(EOF, nil, 1, 5, nil)}, cfg: NewConfig(WithAllowUnquoted(true))},
+		{msg: "Lex invalid ident with AllowUnquoted", input: []byte("1ident"), expected: []Token{NewToken(ILLEGAL, []byte("1ident"), 1, 0, nil)}, cfg: NewConfig(WithAllowUnquoted(true))},
+		{msg: "Lex valid ident with AllowUnquoted with space", input: []byte("ident "), expected: []Token{NewToken(IDENT, []byte("ident"), 1, 0, nil), NewToken(WHITESPACE, []byte(" "), 1, 5, nil), NewToken(EOF, nil, 1, 6, nil)}, cfg: NewConfig(WithAllowUnquoted(true))},
+	}
+
+	RunLexerTests(t, tests)
+}

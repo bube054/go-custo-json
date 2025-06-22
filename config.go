@@ -9,7 +9,7 @@ type Config struct {
 	AllowNegInfinity      bool
 	AllowNaN              bool
 
-	AllowUnQuoted         bool
+	AllowUnquoted         bool
 	AllowSingleQuotes     bool
 	AllowNewlineInStrings bool
 	AllowEscapeChars      bool
@@ -66,6 +66,12 @@ func WithAllowNegInfinity(allow bool) func(*Config) {
 func WithAllowNaN(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowNaN = allow
+	}
+}
+
+func WithAllowUnquoted(allow bool) func(*Config) {
+	return func(c *Config) {
+		c.AllowUnquoted = allow
 	}
 }
 

@@ -1,7 +1,5 @@
 package gocustojson
 
-import "fmt"
-
 type Lexer struct {
 	input  []byte
 	config *Config
@@ -163,7 +161,6 @@ func (l *Lexer) Token() Token {
 		}
 
 		if l.char == 0 {
-			fmt.Println("BINGO")
 			return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
 		}
 
@@ -173,19 +170,18 @@ func (l *Lexer) Token() Token {
 	case 0:
 		return NewToken(EOF, nil, l.line, l.pos, nil)
 	default:
-		// // Lexing ident starts here
 
-		// for !IsWhiteSpace(l.char, l.config.AllowExtraWS) {
-		// 	l.readChar()
-		// }
+		// Lexing ident starts here
+		for IsPossibleJSIdentifier(l.char) {
+			l.readChar()
+		}
 
-		// if IsJSIdentifier(l.input[pos:l.readPos]) {
-		// 	return NewToken(IDENT, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
-		// }
+		if l.config.AllowUnquoted && IsJSIdentifier(l.input[pos:l.pos]) {
+			return NewToken(IDENT, l.input[pos:l.pos], l.line, pos, nil)
+		}
+		// Lexing ident ends here
 
-		// // Lexing ident ends here
-
-		return NewToken(ILLEGAL, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+		return NewToken(ILLEGAL, l.input[pos:], l.line, pos, nil)
 	}
 }
 

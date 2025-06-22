@@ -65,3 +65,19 @@ func IsJSIdentifier(input []byte) bool {
 func isJSCombiningMark(r rune) bool {
 	return unicode.In(r, unicode.Mn, unicode.Mc)
 }
+
+func IsPossibleJSIdentifier(b byte) bool {
+	if b >= 48 && b <= 57 {
+		return true
+	}
+
+	if b == 36 || b == 95 {
+		return  true
+	}
+
+	if unicode.IsLetter(rune(b)) {
+		return true
+	}
+
+	return false
+}
