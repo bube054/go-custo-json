@@ -53,20 +53,30 @@ const (
 	NULL
 	TRUE
 	FALSE
+	COMMA
+	LEFT_SQUARE_BRACE
+	RIGHT_SQUARE_BRACE
+	LEFT_CURLY_BRACE
+	RIGHT_CURLY_BRACE
 )
 
 func (t TokenKind) String() string {
 	m := map[TokenKind]string{
-		0: "EOF",
-		1: "ILLEGAL",
-		2: "WHITESPACE",
-		3: "LINE_COMMENT",
-		4: "BLOCK_COMMENT",
-		5: "STRING",
-		6: "NUMBER",
-		7: "NULL",
-		8: "TRUE",
-		9: "FALSE",
+		0:  "EOF",
+		1:  "ILLEGAL",
+		2:  "WHITESPACE",
+		3:  "LINE_COMMENT",
+		4:  "BLOCK_COMMENT",
+		5:  "STRING",
+		6:  "NUMBER",
+		7:  "NULL",
+		8:  "TRUE",
+		9:  "FALSE",
+		10: "COMMA",
+		11: "LEFT_SQUARE_BRACE",
+		12: "RIGHT_SQUARE_BRACE",
+		13: "LEFT_CURLY_BRACE",
+		14: "RIGHT_CURLY_BRACE",
 	}
 
 	str := m[t]

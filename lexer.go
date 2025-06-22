@@ -54,9 +54,33 @@ func (l *Lexer) Token() Token {
 		if l.config.AllowExtraWS {
 			return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
 		} else {
-			return NewToken(ILLEGAL, NONE, l.input[l.pos:l.readPos], l.line, l.pos, nil)
+			return NewToken(ILLEGAL, NONE, l.input[l.pos:], l.line, l.pos, nil)
 		}
 	// Lexing white space ends here
+
+	// Lexing left curly brace starts here
+	case
+		123: // {
+		return NewToken(LEFT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+	// Lexing left curly brace ends here
+
+	// Lexing right brace starts here
+	case
+		125: // }
+		return NewToken(RIGHT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+	// Lexing right brace ends here
+
+	// Lexing left square brace starts here
+	case
+		91: // [
+		return NewToken(LEFT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+	// Lexing left square brace ends here
+
+	// Lexing right square brace starts here
+	case
+		93: // ]
+		return NewToken(RIGHT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+	// Lexing right square brace ends here
 
 	// Lexing null starts here
 	case

@@ -64,6 +64,17 @@ func TestLexWhiteSpace(t *testing.T) {
 	RunLexerTests(t, tests)
 }
 
+func TestLexDelimiters(t *testing.T) {
+	var tests = []LexerTest{
+		{msg: "Lex [", input: []byte("["), expected: []Token{NewToken(LEFT_SQUARE_BRACE, NONE, []byte("["), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
+		{msg: "Lex ]", input: []byte("]"), expected: []Token{NewToken(RIGHT_SQUARE_BRACE, NONE, []byte("]"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
+		{msg: "Lex {", input: []byte("{"), expected: []Token{NewToken(LEFT_CURLY_BRACE, NONE, []byte("{"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
+		{msg: "Lex }", input: []byte("}"), expected: []Token{NewToken(RIGHT_CURLY_BRACE, NONE, []byte("}"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
+	}
+
+	RunLexerTests(t, tests)
+}
+
 func TestLexComment(t *testing.T) {
 	var tests = []LexerTest{
 		// lex line comment without AllowLineComments
