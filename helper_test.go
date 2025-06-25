@@ -154,3 +154,127 @@ func TestIsPossibleJSIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestIsNaN(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       []byte
+		expected bool
+	}{
+		// Valid possible Nan
+		{msg: "Valid NaN", p1: []byte("NaN"), expected: true},
+
+		// Invalid possible Nan
+		{msg: "Invalid NaN", p1: []byte("Nan"), expected: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := isNaN(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}
+
+func TestIsInf(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       []byte
+		expected bool
+	}{
+		// Valid possible Nan
+		{msg: "Valid Infinity", p1: []byte("Infinity"), expected: true},
+		{msg: "Valid pos Infinity", p1: []byte("+Infinity"), expected: true},
+		{msg: "Valid neg Infinity", p1: []byte("-Infinity"), expected: true},
+
+		// Invalid possible Nan
+		{msg: "Invalid Infinity case-sensitive", p1: []byte("infinity"), expected: false},
+		{msg: "Invalid pos Infinity case-sensitive", p1: []byte("+infinity"), expected: false},
+		{msg: "Invalid neg Infinity case-sensitive", p1: []byte("-infinity"), expected: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := isInf(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}
+
+func TestIsSciNot(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       []byte
+		expected bool
+	}{
+		// Valid scientific notation with e
+		{msg: "Valid e sci-not neutral mantissa and exponent", p1: []byte("2e10"), expected: true},
+		{msg: "Valid e sci-not pos mantissa and pos exponent", p1: []byte("+2e+10"), expected: true},
+		{msg: "Valid e sci-not neg mantissa and pos exponent", p1: []byte("-2e+10"), expected: true},
+		{msg: "Valid e sci-not pos mantissa and neg exponent", p1: []byte("+2e-10"), expected: true},
+		{msg: "Valid e sci-not neg mantissa and neg exponent", p1: []byte("-2e-10"), expected: true},
+		{msg: "Valid e sci-not neg mantissa and float mantissa and neg exponent", p1: []byte("-2.0e-10"), expected: true},
+
+		// Valid scientific notation with E
+		{msg: "Valid E sci-not neutral mantissa and exponent", p1: []byte("2E10"), expected: true},
+		{msg: "Valid E sci-not pos mantissa and pos exponent", p1: []byte("+2E+10"), expected: true},
+		{msg: "Valid E sci-not neg mantissa and pos exponent", p1: []byte("-2E+10"), expected: true},
+		{msg: "Valid E sci-not pos mantissa and neg exponent", p1: []byte("+2E-10"), expected: true},
+		{msg: "Valid E sci-not neg mantissa and neg exponent", p1: []byte("-2E-10"), expected: true},
+		{msg: "Valid E sci-not neg mantissa and float mantissa and neg exponent", p1: []byte("-2.0E-10"), expected: true},
+
+		// Invalid scientific notation
+		{msg: "Invalid sci-not no mantissa", p1: []byte("e10"), expected: false},
+		{msg: "Invalid sci-not no exponent", p1: []byte("2e"), expected: false},
+
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := isScientificNotation(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}
+
+func TestIsHex(t *testing.T) {
+	var tests = []struct {
+		msg      string
+		p1       []byte
+		expected bool
+	}{
+		// Valid hex
+		{msg: "Valid hex 0", p1: []byte("0x0"), expected: true},
+		{msg: "Valid hex 26", p1: []byte("0x1A"), expected: true},
+		{msg: "Valid hex 255", p1: []byte("0xFF"), expected: true},
+		{msg: "Valid hex 16", p1: []byte("0X10"), expected: true},
+		{msg: "Valid hex 127", p1: []byte("0X7f"), expected: true},
+		{msg: "Valid hex -42", p1: []byte("-0X2A"), expected: true},
+
+		// Invalid hex
+		{msg: "Invalid hex no digits", p1: []byte("0x"), expected: false},
+		{msg: "Invalid hex no F>", p1: []byte("0xG1"), expected: false},
+		{msg: "Invalid hex no prefix", p1: []byte("123"), expected: false},
+		{msg: "Invalid hex no CSS style hex color", p1: []byte("FF00FF"), expected: false},
+
+	}
+
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			got := isHex(test.p1)
+
+			if got != test.expected {
+				t.Errorf("got %t, expected %t", got, test.expected)
+			}
+		})
+	}
+}

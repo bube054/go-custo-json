@@ -1,5 +1,10 @@
 package gocustojson
 
+import (
+	"bytes"
+	"fmt"
+)
+
 type Lexer struct {
 	input  []byte
 	config *Config
@@ -17,19 +22,11 @@ func NewLexer(input []byte, cfg *Config) *Lexer {
 	return l
 }
 
-func (l *Lexer) readChar() {
-	if l.line == 0 {
-		l.line = 1
-	}
-
-	if l.readPos > len(l.input)-1 {
-		l.char = 0
-	} else {
-		l.char = l.input[l.readPos]
-	}
-
-	l.pos = l.readPos
-	l.readPos++
+func (l *Lexer) String() string {
+	return fmt.Sprintf(
+		"Lexer{\n  input: %q,\n  line: %d,\n  pos: %d,\n  readPos: %d,\n  char: %q\n}",
+		string(l.input), l.line, l.pos, l.readPos, l.char,
+	)
 }
 
 func (l *Lexer) Token() Token {
@@ -231,7 +228,7 @@ func (l *Lexer) Token() Token {
 					}
 
 				default:
-					if !l.config.AllowEscapeChars {
+					if !l.config.AllowOtherEscapeChars {
 						return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 					}
 				}
@@ -251,13 +248,90 @@ func (l *Lexer) Token() Token {
 		return NewToken(EOF, NONE, nil, l.line, l.pos, nil)
 	default:
 
-		// Lexing ident starts here
-		for IsPossibleJSIdentifier(l.char) {
+		// Lexing number starts here
+		if IsPossibleNumber(l.char, l.peek()) {
 			l.readChar()
-		}
 
-		if l.config.AllowUnquoted && IsJSIdentifier(l.input[pos:l.pos]) {
-			return NewToken(STRING, IDENT, l.input[pos:l.pos], l.line, pos, nil)
+			for IsPossibleNumber(l.char, 0) {
+				l.readChar()
+			}
+
+			num := l.input[pos:l.pos]
+
+			parts := bytes.Split(num, []byte("."))
+			part1 := parts[0]
+
+			hasLeading0 := len(part1) > 1 && part1[0] == '0'
+			hasFollowingX := len(part1) > 1 && (part1[1] == 'x' || part1[1] == 'X')
+
+			if hasLeading0 && !hasFollowingX {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			if startsWithPlus(num) && !l.config.AllowLeadingPlus {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			isNaNum := isNaN(num)
+
+			if isNaNum && !l.config.AllowNaN {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isNaNum {
+				return NewToken(NUMBER, NaN, l.input[pos:], l.line, pos, nil)
+			}
+
+			isInfinity := isInf(num)
+
+
+			if isInfinity && !l.config.AllowInfinity {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isInfinity {
+				return NewToken(NUMBER, INF, l.input[pos:], l.line, pos, nil)
+			}
+
+			if startsOrEndsWithDot(num) && !l.config.AllowPointEdgeNumbers {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isInteger(num) {
+				return NewToken(NUMBER, INTEGER, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isFloat(num) {
+				return NewToken(NUMBER, FLOAT, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isScientificNotation(num) {
+				return NewToken(NUMBER, SCI_NOT, l.input[pos:], l.line, pos, nil)
+			}
+
+			isHexDec := isHex(num)
+			if isHexDec && !l.config.AllowHexNumbers {
+				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
+			}
+
+			if isHexDec {
+				return NewToken(NUMBER, HEX, l.input[pos:], l.line, pos, nil)
+			}
+
+		}
+		// Lexing number ends here
+
+		// Lexing ident starts here
+		if IsPossibleJSIdentifier(l.char) {
+			l.readChar()
+
+			for IsPossibleJSIdentifier(l.char) {
+				l.readChar()
+			}
+
+			if l.config.AllowUnquoted && IsJSIdentifier(l.input[pos:l.pos]) {
+				return NewToken(STRING, IDENT, l.input[pos:l.pos], l.line, pos, nil)
+			}
 		}
 		// Lexing ident ends here
 
@@ -279,6 +353,21 @@ func (l *Lexer) GenerateTokens() Tokens {
 	}
 
 	return tokens
+}
+
+func (l *Lexer) readChar() {
+	if l.line == 0 {
+		l.line = 1
+	}
+
+	if l.readPos > len(l.input)-1 {
+		l.char = 0
+	} else {
+		l.char = l.input[l.readPos]
+	}
+
+	l.pos = l.readPos
+	l.readPos++
 }
 
 func (l *Lexer) peek() byte {

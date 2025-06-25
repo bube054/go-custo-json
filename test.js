@@ -2,15 +2,15 @@
 // console.log(JSON.stringify(a))
 // a = {name: `'\''`}
 // console.log(JSON.stringify(a))
-let a = {name: -NaN}
-console.log(JSON.stringify(a))
+// let a = {name: +90}
+// console.log(JSON.stringify(a))
 // a = {name: `'\''`}
 // console.log(JSON.stringify(a))
 
 
-// const b = `{"name":"name"}`
+const b = `{"name": "\\p"}`
 
-// console.log(JSON.parse(b))
+console.log(JSON.parse(b))
 
 // // For example: 7B316,6F16,4B2A16 7 B 3 16 , 6 F 16 , 4 B 2 A 16
 

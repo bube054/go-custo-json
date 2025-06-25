@@ -124,8 +124,8 @@ func TestLexString(t *testing.T) {
 		{msg: "Lex esc tab single string", input: []byte(`'\t'`), expected: []Token{NewToken(STRING, NONE, []byte(`'\t'`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		{msg: "Lex esc 4 hex digits single string", input: []byte(`'\u597D'`), expected: []Token{NewToken(STRING, NONE, []byte(`'\u597D'`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		{msg: "Lex invalid esc 4 hex digits single string", input: []byte(`'\u00Z1'`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`'\u00Z1'`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
-		{msg: "Lex invalid escape single string without AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`'\Users'`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(false))},
-		{msg: "Lex invalid escape single string with AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(STRING, NONE, []byte(`'\Users'`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(true))},
+		{msg: "Lex invalid escape single string without AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`'\Users'`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowOtherEscapeChars(false))},
+		{msg: "Lex invalid escape single string with AllowEscapeChars", input: []byte(`'\Users'`), expected: []Token{NewToken(STRING, NONE, []byte(`'\Users'`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowOtherEscapeChars(true))},
 		{msg: "Lex invalid escape newline double string with AllowNewlineInStrings", input: []byte(`"\
 		"`), expected: []Token{NewToken(STRING, NONE, []byte(`"\
 		"`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 6, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowNewlineInStrings(true))},
@@ -146,16 +146,12 @@ func TestLexString(t *testing.T) {
 		{msg: "Lex esc tab double string", input: []byte(`"\t"`), expected: []Token{NewToken(STRING, NONE, []byte(`"\t"`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		{msg: "Lex esc 4 hex digits double string", input: []byte(`"\u4F60"`), expected: []Token{NewToken(STRING, NONE, []byte(`"\u4F60"`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
 		{msg: "Lex invalid esc 4 hex digits double string", input: []byte(`"\u00G1"`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`"\u00G1"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true))},
-		{msg: "Lex invalid escape double string without AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`"\Users"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(false))},
-		{msg: "Lex invalid escape double string with AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(STRING, NONE, []byte(`"\Users"`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowEscapeChars(true))},
+		{msg: "Lex invalid escape double string without AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`"\Users"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowOtherEscapeChars(false))},
+		{msg: "Lex invalid escape double string with AllowEscapeChars", input: []byte(`"\Users"`), expected: []Token{NewToken(STRING, NONE, []byte(`"\Users"`), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowOtherEscapeChars(true))},
 		{msg: "Lex invalid escape newline double string without AllowNewlineInStrings", input: []byte(`"\
 		"`), expected: []Token{NewToken(ILLEGAL, NONE, []byte(`"\
 		"`), 1, 0, nil)}, cfg: NewConfig(WithAllowSingleQuotes(true), WithAllowNewlineInStrings(false))},
 	}
-
-	// for i, b := range []byte(`'\\'`) {
-	// 	fmt.Printf("i: %d, p: %d, b: %q\n", i, b, b)
-	// }
 
 	RunLexerTests(t, tests)
 }
@@ -189,7 +185,7 @@ func TestLexTrue(t *testing.T) {
 	var tests = []LexerTest{
 		{msg: "Lex valid true", input: []byte("true"), expected: []Token{NewToken(TRUE, NONE, []byte("true"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid tRuE case-sensitive", input: []byte("tRuE"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("tRuE"), 1, 0, nil)}, cfg: NewConfig()},
-		{msg: "Lex invalid null t", input: []byte("t"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("t"), 1, 0, nil)}, cfg: NewConfig()},
+		{msg: "Lex invalid t", input: []byte("t"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("t"), 1, 0, nil)}, cfg: NewConfig()},
 	}
 
 	RunLexerTests(t, tests)
@@ -199,7 +195,53 @@ func TestLexFalse(t *testing.T) {
 	var tests = []LexerTest{
 		{msg: "Lex valid false", input: []byte("false"), expected: []Token{NewToken(FALSE, NONE, []byte("false"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 5, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid fAlSe case-sensitive", input: []byte("fAlSe"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("fAlSe"), 1, 0, nil)}, cfg: NewConfig()},
-		{msg: "Lex invalid null t", input: []byte("t"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("t"), 1, 0, nil)}, cfg: NewConfig()},
+		{msg: "Lex invalid f", input: []byte("f"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("f"), 1, 0, nil)}, cfg: NewConfig()},
+	}
+
+	RunLexerTests(t, tests)
+}
+
+func TestLexNumber(t *testing.T) {
+	var tests = []LexerTest{
+		// Lex NaN
+		{msg: "Lex NaN without AllowNaN", input: []byte("NaN"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("NaN"), 1, 0, nil)}, cfg: NewConfig()},
+		{msg: "Lex NaN with AllowNaN", input: []byte("NaN"), expected: []Token{NewToken(NUMBER, NaN, []byte("NaN"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowNaN(true))},
+
+		// Lex Infinity
+		{msg: "Lex Infinity without AllowInfinity", input: []byte("Infinity"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("Infinity"), 1, 0, nil)}, cfg: NewConfig(WithAllowInfinity(false))},
+		{msg: "Lex Infinity with AllowInfinity", input: []byte("Infinity"), expected: []Token{NewToken(NUMBER, INF, []byte("Infinity"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowInfinity(true))},
+		{msg: "Lex pos Infinity without AllowInfinity and AllowLeadingPlus", input: []byte("+Infinity"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("+Infinity"), 1, 0, nil)}, cfg: NewConfig(WithAllowInfinity(false), WithAllowLeadingPlus(false))},
+		{msg: "Lex pos Infinity with AllowInfinity and AllowLeadingPlus", input: []byte("+Infinity"), expected: []Token{NewToken(NUMBER, INF, []byte("+Infinity"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 9, nil)}, cfg: NewConfig(WithAllowInfinity(true), WithAllowLeadingPlus(true))},
+		{msg: "Lex neg Infinity without AllowInfinity and AllowLeadingPlus", input: []byte("-Infinity"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("-Infinity"), 1, 0, nil)}, cfg: NewConfig(WithAllowInfinity(false), WithAllowLeadingPlus(false))},
+		{msg: "Lex neg Infinity with AllowInfinity and AllowLeadingPlus", input: []byte("-Infinity"), expected: []Token{NewToken(NUMBER, INF, []byte("-Infinity"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 9, nil)}, cfg: NewConfig(WithAllowInfinity(true), WithAllowLeadingPlus(true))},
+
+		// Lex integer
+		{msg: "Lex valid integer", input: []byte("0"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("0"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex invalid integer leading zero", input: []byte("00"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("00"), 1, 0, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid long integer", input: []byte("123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 9, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid pos integer", input: []byte("+123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("+123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 10, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid neg integer", input: []byte("-123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("-123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 10, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+
+		// Lex float
+		{msg: "Lex valid float", input: []byte("0.0"), expected: []Token{NewToken(NUMBER, FLOAT, []byte("0.0"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex invalid float leading zero", input: []byte("03.4"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("03.4"), 1, 0, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid float", input: []byte("123.456"), expected: []Token{NewToken(NUMBER, FLOAT, []byte("123.456"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 7, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid pos float", input: []byte("+123.456"), expected: []Token{NewToken(NUMBER, FLOAT, []byte("+123.456"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid neg float", input: []byte("-123.456"), expected: []Token{NewToken(NUMBER, FLOAT, []byte("-123.456"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 8, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+
+		// lex scientific notation
+		{msg: "Lex valid e sci-not with", input: []byte("123e456"), expected: []Token{NewToken(NUMBER, SCI_NOT, []byte("123e456"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 7, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex invalid e sci-not with", input: []byte("e456"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("e456"), 1, 0, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid E sci-not with", input: []byte("123E456"), expected: []Token{NewToken(NUMBER, SCI_NOT, []byte("123E456"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 7, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex invalid E sci-not with", input: []byte("E456"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("E456"), 1, 0, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+
+		// Lex hex
+		{msg: "Lex hex without AllowHexNumbers", input: []byte("0x1A"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("0x1A"), 1, 0, nil)}, cfg: NewConfig(WithAllowHexNumbers(false))},
+		{msg: "Lex hex with AllowHexNumbers", input: []byte("0x1A"), expected: []Token{NewToken(NUMBER, HEX, []byte("0x1A"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowHexNumbers(true))},
+		{msg: "Lex pos hex without AllowHexNumbers and AllowLeadingPlus", input: []byte("+0x1A"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("+0x1A"), 1, 0, nil)}, cfg: NewConfig(WithAllowHexNumbers(false), WithAllowLeadingPlus(false))},
+		{msg: "Lex pos hex with AllowHexNumbers and AllowLeadingPlus", input: []byte("+0x1A"), expected: []Token{NewToken(NUMBER, HEX, []byte("+0x1A"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 5, nil)}, cfg: NewConfig(WithAllowHexNumbers(true), WithAllowLeadingPlus(true))},
+		{msg: "Lex neg hex without AllowHexNumbers and AllowLeadingPlus", input: []byte("-0x1A"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("-0x1A"), 1, 0, nil)}, cfg: NewConfig(WithAllowHexNumbers(false), WithAllowLeadingPlus(false))},
+		{msg: "Lex neg hex with AllowHexNumbers and AllowLeadingPlus", input: []byte("-0x1A"), expected: []Token{NewToken(NUMBER, HEX, []byte("-0x1A"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 5, nil)}, cfg: NewConfig(WithAllowHexNumbers(true), WithAllowLeadingPlus(true))},
 	}
 
 	RunLexerTests(t, tests)

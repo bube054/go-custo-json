@@ -13,13 +13,12 @@ const (
 	STRING_VALUE
 	IDENT
 
-	INTEGER     //  positive or negative
-	FLOAT       //  positive or negative
-	SCI_NOT_INT //  positive or negative sign/expo
-	SCI_NOT_FLT //  positive or negative sign/expo
-	HEX         //  positive or negative
-	INF         //  positive or negative
-	NaN         //  positive or negative
+	INTEGER //  positive or negative
+	FLOAT   //  positive or negative
+	SCI_NOT //  positive or negative sign/expo
+	HEX     //  positive or negative
+	INF     //  positive or negative
+	NaN     //  positive or negative
 )
 
 func (t TokenKindType) String() string {
@@ -29,11 +28,10 @@ func (t TokenKindType) String() string {
 		2: "IDENT",
 		3: "INTEGER",
 		4: "FLOAT",
-		5: "SCI_NOT_INT",
-		6: "SCI_NOT_FLT",
-		7: "HEX",
-		8: "INF",
-		9: "NaN",
+		5: "SCI_NOT",
+		6: "HEX",
+		7: "INF",
+		8: "NaN",
 	}
 
 	str := m[t]

@@ -1,27 +1,37 @@
 package gocustojson
 
+// Config defines the encoding and decoding behavior for the JSON parser.
+//
+// By default, all fields are false (strict mode). Enabling individual fields allows the parser
+// to accept features that are not allowed by the standard [ECMA-404] specification but may appear
+// in relaxed formats like [JSON5] or user-generated JSON.
+//
+// [ECMA-404]: https://datatracker.ietf.org/doc/html/rfc7159
+// [JSON5]: https://json5.org/
 type Config struct {
-	AllowExtraWS bool
+	AllowExtraWS bool // AllowExtraWS allows extra whitespace in places not normally permitted by strict JSON.
 
-	AllowHexNumbers       bool
-	AllowPointEdgeNumbers bool
-	AllowInfinity         bool
-	AllowNaN              bool
+	AllowHexNumbers       bool // AllowHexNumbers enables support for hexadecimal numeric literals (e.g., 0xFF).
+	AllowPointEdgeNumbers bool // AllowPointEdgeNumbers allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
 
-	AllowUnquoted         bool
-	AllowSingleQuotes     bool
-	AllowNewlineInStrings bool
-	AllowEscapeChars      bool
+	AllowInfinity    bool // AllowInfinity enables the use of `Infinity` and `-Infinity` as number values.
+	AllowNaN         bool // AllowNaN allows `NaN` (Not-a-Number) as a numeric value.
+	AllowLeadingPlus bool // AllowLeadingPlus permits a leading '+' in numbers (e.g., `+42`).
 
-	AllowTrailingCommaArray  bool
-	AllowTrailingCommaObject bool
+	AllowUnquoted         bool // AllowUnquoted enables parsing of unquoted object keys (e.g., `{foo: "bar"}`).
+	AllowSingleQuotes     bool // AllowSingleQuotes allows strings to be enclosed in single quotes (' ') in addition to double quotes.
+	AllowNewlineInStrings bool // AllowNewlineInStrings permits literal newlines inside string values without requiring escaping.
+	AllowOtherEscapeChars bool // AllowOtherEscapeChars enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
 
-	AllowLineComments  bool
-	AllowBlockComments bool
+	AllowTrailingCommaArray  bool // AllowTrailingCommaArray permits a trailing comma in array literals (e.g., `[1, 2, ]`).
+	AllowTrailingCommaObject bool // AllowTrailingCommaObject permits a trailing comma in object literals (e.g., `{"a": 1,}`).
 
-	AllowMalformedInput bool
+	AllowLineComments  bool // AllowLineComments enables the use of single-line comments (// ...).
+	AllowBlockComments bool // AllowBlockComments enables the use of block comments (/* ... */).
 }
 
+// NewConfig creates a new Config instance, optionally applying one or more configuration options.
+// Options are applied in the order provided.
 func NewConfig(opts ...func(*Config)) *Config {
 	cfg := &Config{}
 
@@ -31,6 +41,8 @@ func NewConfig(opts ...func(*Config)) *Config {
 
 	return cfg
 }
+
+// Functional option setters for each configuration flag.
 
 func WithAllowExtraWS(allow bool) func(*Config) {
 	return func(c *Config) {
@@ -62,6 +74,12 @@ func WithAllowNaN(allow bool) func(*Config) {
 	}
 }
 
+func WithAllowLeadingPlus(allow bool) func(*Config) {
+	return func(c *Config) {
+		c.AllowLeadingPlus = allow
+	}
+}
+
 func WithAllowUnquoted(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowUnquoted = allow
@@ -80,9 +98,9 @@ func WithAllowNewlineInStrings(allow bool) func(*Config) {
 	}
 }
 
-func WithAllowEscapeChars(allow bool) func(*Config) {
+func WithAllowOtherEscapeChars(allow bool) func(*Config) {
 	return func(c *Config) {
-		c.AllowEscapeChars = allow
+		c.AllowOtherEscapeChars = allow
 	}
 }
 
@@ -107,11 +125,5 @@ func WithAllowLineComments(allow bool) func(*Config) {
 func WithAllowBlockComments(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowBlockComments = allow
-	}
-}
-
-func withMalformedInput(allow bool) func(*Config) {
-	return func(c *Config) {
-		c.AllowMalformedInput = allow
 	}
 }
