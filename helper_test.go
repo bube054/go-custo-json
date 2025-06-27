@@ -16,12 +16,18 @@ func TestIsNewLine(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
-			got := IsNewLine(test.p1)
+			got := isNewLine(test.p1)
 
 			if got != test.expected {
 				t.Errorf("got %t, expected %t", got, test.expected)
 			}
 		})
+	}
+}
+
+func BenchmarkIsNewLine(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		isNewLine('\n')
 	}
 }
 
@@ -53,12 +59,18 @@ func TestIsWhiteSpace(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
-			got := IsWhiteSpace(test.p1, test.p2)
+			got := isWhiteSpace(test.p1, test.p2)
 
 			if got != test.expected {
 				t.Errorf("got %t, expected %t", got, test.expected)
 			}
 		})
+	}
+}
+
+func BenchmarkIsWhiteSpace(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		isWhiteSpace(' ', true)
 	}
 }
 
@@ -83,12 +95,18 @@ func TestIs4HexDigits(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
-			got := Is4HexDigits(test.p1)
+			got := is4HexDigits(test.p1)
 
 			if got != test.expected {
 				t.Errorf("got %t, expected %t", got, test.expected)
 			}
 		})
+	}
+}
+
+func BenchmarkIs4HexDigits(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		is4HexDigits([4]byte{'0', 'F', 'a', '9'})
 	}
 }
 
@@ -232,7 +250,6 @@ func TestIsSciNot(t *testing.T) {
 		// Invalid scientific notation
 		{msg: "Invalid sci-not no mantissa", p1: []byte("e10"), expected: false},
 		{msg: "Invalid sci-not no exponent", p1: []byte("2e"), expected: false},
-
 	}
 
 	for _, test := range tests {
@@ -265,7 +282,6 @@ func TestIsHex(t *testing.T) {
 		{msg: "Invalid hex no F>", p1: []byte("0xG1"), expected: false},
 		{msg: "Invalid hex no prefix", p1: []byte("123"), expected: false},
 		{msg: "Invalid hex no CSS style hex color", p1: []byte("FF00FF"), expected: false},
-
 	}
 
 	for _, test := range tests {

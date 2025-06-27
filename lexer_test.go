@@ -16,7 +16,7 @@ func RunLexerTests(t *testing.T, tests []LexerTest) {
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
 			lexer := NewLexer(test.input, test.cfg)
-			got := lexer.GenerateTokens()
+			got := lexer.Tokens()
 
 			if !reflect.DeepEqual(got, test.expected) {
 				t.Errorf("got %v, expected %v", got, test.expected)
@@ -245,4 +245,39 @@ func TestLexNumber(t *testing.T) {
 	}
 
 	RunLexerTests(t, tests)
+}
+
+func BenchmarkLexerReadChar(b *testing.B) {
+	l := NewLexer([]byte("lexer"), NewConfig())
+	for i := 0; i < b.N; i++ {
+		l.readChar()
+	}
+}
+
+func BenchmarkLexerPeek(b *testing.B) {
+	l := NewLexer([]byte("lexer"), NewConfig())
+	for i := 0; i < b.N; i++ {
+		l.peek()
+	}
+}
+
+func BenchmarkLexerPeekBy(b *testing.B) {
+	l := NewLexer([]byte("lexer"), NewConfig())
+	for i := 0; i < b.N; i++ {
+		l.peekBy(1)
+	}
+}
+
+func BenchmarkLexerPrev(b *testing.B) {
+	l := NewLexer([]byte("lexer"), NewConfig())
+	for i := 0; i < b.N; i++ {
+		l.prev()
+	}
+}
+
+func BenchmarkLexerPrevBy(b *testing.B) {
+	l := NewLexer([]byte("lexer"), NewConfig())
+	for i := 0; i < b.N; i++ {
+		l.prevBy(1)
+	}
 }

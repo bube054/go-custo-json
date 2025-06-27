@@ -7,12 +7,13 @@ import (
 	"unicode/utf8"
 )
 
-func IsNewLine(char byte) bool {
+// isNewLine reports whether a byte is a newline.
+func isNewLine(char byte) bool {
 	return char == '\n'
 }
 
-// IsWhiteSpace reports whether a byte is a whitespace.
-func IsWhiteSpace(char byte, AllowExtraWS bool) bool {
+// isWhiteSpace reports whether a byte is a whitespace.
+func isWhiteSpace(char byte, AllowExtraWS bool) bool {
 	switch char {
 	case
 		'\x20', // space
@@ -31,16 +32,14 @@ func IsWhiteSpace(char byte, AllowExtraWS bool) bool {
 	}
 }
 
-// IsWhiteSpace reports whether a byte slice is a hex.
-func Is4HexDigits(chars [4]byte) bool {
+// is4HexDigits reports if all 4 bytes in the input array are valid hexadecimal characters (0-9, A-F, a-f).
+func is4HexDigits(chars [4]byte) bool {
 	for _, char := range chars {
-		if (char >= 48 && char <= 57) || (char >= 65 && char <= 70) || (char >= 97 && char <= 102) {
+		if (char >= '0' && char <= '9') || (char >= 'A' && char <= 'F') || (char >= 'a' && char <= 'f') {
 			continue
 		}
-
 		return false
 	}
-
 	return true
 }
 
@@ -121,14 +120,14 @@ func IsPossibleNumber(b, b2 byte) bool {
 	// 	return true
 	// }
 	if b2 != 0 {
-		return (b == '+') || 
-		(b == '-') || 
-		(b == 'N' && b2 == 'a') || 
-		(b == 'I' && b2 == 'n') ||
-		(b == '0' && b2 == 'X') ||
-		(b == '0' && b2 == 'x') ||
-		isDigit(b) ||
-		isHexLetter(b)
+		return (b == '+') ||
+			(b == '-') ||
+			(b == 'N' && b2 == 'a') ||
+			(b == 'I' && b2 == 'n') ||
+			(b == '0' && b2 == 'X') ||
+			(b == '0' && b2 == 'x') ||
+			isDigit(b) ||
+			isHexLetter(b)
 	} else {
 		return isDigit(b) ||
 			isHexLetter(b) ||
@@ -139,7 +138,7 @@ func IsPossibleNumber(b, b2 byte) bool {
 			b == 'N' || b == 'a' ||
 			b == 'I' || b == 'n' || b == 'f' || b == 'i' || b == 't' || b == 'y' ||
 			b == 'X' || b == 'x'
-			
+
 	}
 }
 
@@ -189,12 +188,6 @@ func isInf(input []byte) bool {
 
 	return false
 }
-
-// func isLeadingZeroNumber(input []byte) bool {
-// 	if
-
-// 	return false
-// }
 
 func isInteger(input []byte) bool {
 	_, err := strconv.ParseInt(string(input), 10, 64)

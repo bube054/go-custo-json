@@ -1,5 +1,10 @@
 package gocustojson
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Config defines the encoding and decoding behavior for the JSON parser.
 //
 // By default, all fields are false (strict mode). Enabling individual fields allows the parser
@@ -42,20 +47,45 @@ func NewConfig(opts ...func(*Config)) *Config {
 	return cfg
 }
 
-// Functional option setters for each configuration flag.
+// String returns a formatted string representing all configuration options in the Config.
+// Each field is listed with its corresponding boolean value.
+func (c *Config) String() string {
+	var b strings.Builder
+	b.WriteString("Config{\n")
+	b.WriteString(fmt.Sprintf("  AllowExtraWS: %v,\n", c.AllowExtraWS))
+	b.WriteString(fmt.Sprintf("  AllowHexNumbers: %v,\n", c.AllowHexNumbers))
+	b.WriteString(fmt.Sprintf("  AllowPointEdgeNumbers: %v,\n", c.AllowPointEdgeNumbers))
+	b.WriteString(fmt.Sprintf("  AllowInfinity: %v,\n", c.AllowInfinity))
+	b.WriteString(fmt.Sprintf("  AllowNaN: %v,\n", c.AllowNaN))
+	b.WriteString(fmt.Sprintf("  AllowLeadingPlus: %v,\n", c.AllowLeadingPlus))
+	b.WriteString(fmt.Sprintf("  AllowUnquoted: %v,\n", c.AllowUnquoted))
+	b.WriteString(fmt.Sprintf("  AllowSingleQuotes: %v,\n", c.AllowSingleQuotes))
+	b.WriteString(fmt.Sprintf("  AllowNewlineInStrings: %v,\n", c.AllowNewlineInStrings))
+	b.WriteString(fmt.Sprintf("  AllowOtherEscapeChars: %v,\n", c.AllowOtherEscapeChars))
+	b.WriteString(fmt.Sprintf("  AllowTrailingCommaArray: %v,\n", c.AllowTrailingCommaArray))
+	b.WriteString(fmt.Sprintf("  AllowTrailingCommaObject: %v,\n", c.AllowTrailingCommaObject))
+	b.WriteString(fmt.Sprintf("  AllowLineComments: %v,\n", c.AllowLineComments))
+	b.WriteString(fmt.Sprintf("  AllowBlockComments: %v,\n", c.AllowBlockComments))
+	b.WriteString("}")
+	return b.String()
+}
 
+
+// WithAllowExtraWS is the functional option setters for the AllowExtraWS flag.
 func WithAllowExtraWS(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowExtraWS = allow
 	}
 }
 
+// Functional option setters for the AllowHexNumbers flag.
 func WithAllowHexNumbers(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowHexNumbers = allow
 	}
 }
 
+// Functional option setters for the AllowHexNumbers flag.
 func WithAllowPointEdgeNumbers(allow bool) func(*Config) {
 	return func(c *Config) {
 		c.AllowPointEdgeNumbers = allow
