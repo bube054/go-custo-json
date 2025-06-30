@@ -89,14 +89,14 @@ func (t TokenKind) String() string {
 type Token struct {
 	Kind    TokenKind    // The general kind of the token (e.g., STRING, NUMBER).
 	SubKind TokenSubKind // The specific sub kind within a kind (e.g., INTEGER vs FLOAT).
-	Value   string       // The raw value of the token.
+	Literal string       // The literal value of the token.
 	Line    int          // The line number where the token appears.
 	Column  int          // The column number (character position) in the line.
 }
 
 // NewToken creates and returns a new Token.
 // If cb is non-nil, it is called during token creation.
-func NewToken(kind TokenKind, subKind TokenSubKind, value []byte, line, start int, cb func()) Token {
+func NewToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) Token {
 	if cb != nil {
 		cb()
 	}
@@ -104,7 +104,7 @@ func NewToken(kind TokenKind, subKind TokenSubKind, value []byte, line, start in
 	return Token{
 		Kind:    kind,
 		SubKind: subKind,
-		Value:   string(value),
+		Literal: string(literal),
 		Line:    line,
 		Column:  start,
 	}
@@ -116,10 +116,14 @@ func (t Token) String() string {
 		"Token{Kind: %s, SubKind: %s, Value: %s, Line: %d, Column: %d}",
 		t.Kind,
 		t.SubKind,
-		t.Value,
+		t.Literal,
 		t.Line,
 		t.Column,
 	)
+}
+
+func (t Token) Value() any {
+	return ""
 }
 
 // Tokens is a slice of Token.

@@ -70,6 +70,7 @@ func TestLexDelimiters(t *testing.T) {
 		{msg: "Lex ]", input: []byte("]"), expected: []Token{NewToken(RIGHT_SQUARE_BRACE, NONE, []byte("]"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
 		{msg: "Lex {", input: []byte("{"), expected: []Token{NewToken(LEFT_CURLY_BRACE, NONE, []byte("{"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
 		{msg: "Lex }", input: []byte("}"), expected: []Token{NewToken(RIGHT_CURLY_BRACE, NONE, []byte("}"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
+		{msg: "Lex ,", input: []byte(","), expected: []Token{NewToken(COMMA, NONE, []byte(","), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig()},
 	}
 
 	RunLexerTests(t, tests)
@@ -206,6 +207,8 @@ func TestLexNumber(t *testing.T) {
 		// Lex NaN
 		{msg: "Lex NaN without AllowNaN", input: []byte("NaN"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("NaN"), 1, 0, nil)}, cfg: NewConfig()},
 		{msg: "Lex NaN with AllowNaN", input: []byte("NaN"), expected: []Token{NewToken(NUMBER, NaN, []byte("NaN"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowNaN(true))},
+		{msg: "Lex pos NaN with AllowNaN", input: []byte("+NaN"), expected: []Token{NewToken(NUMBER, NaN, []byte("+NaN"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowNaN(true), WithAllowLeadingPlus(true))},
+		{msg: "Lex neg NaN with AllowNaN", input: []byte("-NaN"), expected: []Token{NewToken(NUMBER, NaN, []byte("-NaN"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 4, nil)}, cfg: NewConfig(WithAllowNaN(true))},
 
 		// Lex Infinity
 		{msg: "Lex Infinity without AllowInfinity", input: []byte("Infinity"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("Infinity"), 1, 0, nil)}, cfg: NewConfig(WithAllowInfinity(false))},
@@ -218,9 +221,8 @@ func TestLexNumber(t *testing.T) {
 		// Lex integer
 		{msg: "Lex valid integer", input: []byte("0"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("0"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
 		{msg: "Lex invalid integer leading zero", input: []byte("00"), expected: []Token{NewToken(ILLEGAL, NONE, []byte("00"), 1, 0, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
-		{msg: "Lex valid long integer", input: []byte("123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 9, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
-		{msg: "Lex valid pos integer", input: []byte("+123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("+123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 10, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
-		{msg: "Lex valid neg integer", input: []byte("-123456789"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("-123456789"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 10, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid long integer", input: []byte("1234567890"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("1234567890"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 10, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
+		{msg: "Lex valid pos integer", input: []byte("+1234567890"), expected: []Token{NewToken(NUMBER, INTEGER, []byte("+1234567890"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 11, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},
 
 		// Lex float
 		{msg: "Lex valid float", input: []byte("0.0"), expected: []Token{NewToken(NUMBER, FLOAT, []byte("0.0"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 3, nil)}, cfg: NewConfig(WithAllowLeadingPlus(true))},

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strconv"
 	"unicode"
-	"unicode/utf8"
 )
 
 // isNewLine reports whether a byte is a newline.
@@ -43,26 +42,6 @@ func is4HexDigits(chars [4]byte) bool {
 	return true
 }
 
-func IsJSIdentifier(input []byte) bool {
-	str := string(input)
-	for i, char := range str {
-		isDollarOrUnderscore := char == '$' || char == '_'
-		if i == 0 {
-			if !(unicode.IsLetter(char) || isDollarOrUnderscore) {
-				return false
-			}
-		} else {
-			if !(unicode.IsLetter(char) ||
-				unicode.IsDigit(char) ||
-				isDollarOrUnderscore ||
-				isJSCombiningMark(char)) {
-				return false
-			}
-		}
-	}
-	return utf8.Valid(input)
-}
-
 func isJSCombiningMark(r rune) bool {
 	return unicode.In(r, unicode.Mn, unicode.Mc)
 }
@@ -91,12 +70,16 @@ func isExponent(b byte) bool {
 	return b == 'e' || b == 'E'
 }
 
-func IsPossibleJSIdentifier(b byte) bool {
+func isPossibleJSIdentifier(b byte) bool {
+	if b == '+' || b == '-' || b == '*' || b == '/' {
+		return false
+	}
+
 	if isDigit(b) {
 		return true
 	}
 
-	if b == 36 || b == 95 {
+	if b == '$' || b == '_' {
 		return true
 	}
 
@@ -111,39 +94,65 @@ func isHexLetter(b byte) bool {
 	return (b >= 65 && b <= 70) || (b >= 97 && b <= 102)
 }
 
-func IsPossibleNumber(b, b2 byte) bool {
-	// if b2 != 0 && b == 'N' && b2 == 'a' {
-	// 	return true
-	// }
+// func isNumber(b, b2 byte) bool {
+// 	// if b2 != 0 && b == 'N' && b2 == 'a' {
+// 	// 	return true
+// 	// }
 
-	// if b2 != 0 && b == 'I' && b2 == 'n' {
-	// 	return true
-	// }
-	if b2 != 0 {
-		return (b == '+') ||
-			(b == '-') ||
-			(b == 'N' && b2 == 'a') ||
-			(b == 'I' && b2 == 'n') ||
-			(b == '0' && b2 == 'X') ||
-			(b == '0' && b2 == 'x') ||
-			isDigit(b) ||
-			isHexLetter(b)
-	} else {
-		return isDigit(b) ||
-			isHexLetter(b) ||
-			isPlus(b) ||
-			isMinus(b) ||
-			isDot(b) ||
-			isExponent(b) ||
-			b == 'N' || b == 'a' ||
-			b == 'I' || b == 'n' || b == 'f' || b == 'i' || b == 't' || b == 'y' ||
-			b == 'X' || b == 'x'
+// 	// if b2 != 0 && b == 'I' && b2 == 'n' {
+// 	// 	return true
+// 	// }
+// 	if b2 != 0 {
+// 		return (b == '+') ||
+// 			(b == '-') ||
+// 			(b == 'N' && b2 == 'a') ||
+// 			(b == 'I' && b2 == 'n') ||
+// 			(b == '0' && b2 == 'X') ||
+// 			(b == '0' && b2 == 'x') ||
+// 			isDigit(b) ||
+// 			isHexLetter(b)
+// 	} else {
+// 		return isDigit(b) ||
+// 			isHexLetter(b) ||
+// 			isPlus(b) ||
+// 			isMinus(b) ||
+// 			isDot(b) ||
+// 			isExponent(b) ||
+// 			b == 'N' || b == 'a' ||
+// 			b == 'I' || b == 'n' || b == 'f' || b == 'i' || b == 't' || b == 'y' ||
+// 			b == 'X' || b == 'x'
 
-	}
+// 	}
+// }
+
+func isPossibleNumber(b byte) bool {
+	return b == '+' ||
+		b == '-' ||
+		b == '.' ||
+		b == 'e' ||
+		b == 'E' ||
+		b == 'N' ||
+		b == 'a' ||
+		b == 'I' ||
+		b == 'i' ||
+		b == 'n' ||
+		b == 'f' ||
+		b == 't' ||
+		b == 'y' ||
+		b == '0' ||
+		b == 'x' ||
+		b == 'X' ||
+		(b >= 'A' && b <= 'F') || 
+		(b >= 'a' && b <= 'f') ||
+		isDigit(b)
 }
 
 func startsWithPlus(input []byte) bool {
 	return bytes.HasPrefix(input, []byte{'+'})
+}
+
+func startsWithDigit(input []byte) bool {
+	return len(input) > 0 && input[0] >= '0' && input[0] <= '9'
 }
 
 func startsOrEndsWithDot(input []byte) bool {
@@ -151,6 +160,14 @@ func startsOrEndsWithDot(input []byte) bool {
 }
 
 func isNaN(input []byte) bool {
+	if after, ok := bytes.CutPrefix(input, []byte{'+'}); ok {
+		return isNaN(after)
+	}
+
+	if after, ok := bytes.CutPrefix(input, []byte{'-'}); ok {
+		return isNaN(after)
+	}
+
 	if len(input) != 3 {
 		return false
 	}
@@ -163,30 +180,26 @@ func isNaN(input []byte) bool {
 }
 
 func isInf(input []byte) bool {
-	if len(input) == 8 {
-		return input[0] == 'I' &&
-			input[1] == 'n' &&
-			input[2] == 'f' &&
-			input[3] == 'i' &&
-			input[4] == 'n' &&
-			input[5] == 'i' &&
-			input[6] == 't' &&
-			input[7] == 'y'
+	if after, ok := bytes.CutPrefix(input, []byte{'+'}); ok {
+		return isInf(after)
 	}
 
-	if len(input) == 9 {
-		return (input[0] == '-' || input[0] == '+') &&
-			input[1] == 'I' &&
-			input[2] == 'n' &&
-			input[3] == 'f' &&
-			input[4] == 'i' &&
-			input[5] == 'n' &&
-			input[6] == 'i' &&
-			input[7] == 't' &&
-			input[8] == 'y'
+	if after, ok := bytes.CutPrefix(input, []byte{'-'}); ok {
+		return isInf(after)
 	}
 
-	return false
+	if len(input) != 8 {
+		return false
+	}
+
+	return input[0] == 'I' &&
+		input[1] == 'n' &&
+		input[2] == 'f' &&
+		input[3] == 'i' &&
+		input[4] == 'n' &&
+		input[5] == 'i' &&
+		input[6] == 't' &&
+		input[7] == 'y'
 }
 
 func isInteger(input []byte) bool {

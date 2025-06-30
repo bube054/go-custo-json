@@ -1,4 +1,4 @@
-// Package gocustojson provides configurable options for encoding and decoding of JSON.
+// Package gocustojson provides configurable options for parsing of JSON.
 //
 // It supports parsing a broad range of JSON syntax variants — from strict [ECMA-404-compliant JSON]
 // to more permissive formats like [JSON5]. The parser behavior can be customized via the Config struct,

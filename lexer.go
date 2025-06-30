@@ -43,6 +43,10 @@ func (l *Lexer) String() string {
 
 // Token returns the current token being parsed by the lexer.
 func (l *Lexer) Token() Token {
+	if l.config == nil {
+		l.config = NewConfig()
+	}
+
 	pos := l.pos
 	char := l.char
 	nextChar := l.peek()
@@ -87,6 +91,11 @@ func (l *Lexer) Token() Token {
 	// Lexing right square brace starts here
 	case ']':
 		return NewToken(RIGHT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		// Lexing right square brace ends here
+
+	// Lexing right square brace starts here
+	case ',':
+		return NewToken(COMMA, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
 		// Lexing right square brace ends here
 
 	// Lexing null starts here
@@ -255,22 +264,26 @@ func (l *Lexer) Token() Token {
 	default:
 
 		// Lexing number starts here
-		if IsPossibleNumber(l.char, l.peek()) {
+		count := 0
+		if isPossibleNumber(l.char) {
 			l.readChar()
+			count++
 
-			for IsPossibleNumber(l.char, 0) {
+			for isPossibleNumber(l.char) {
 				l.readChar()
+				count++
 			}
 
 			num := l.input[pos:l.pos]
 
-			parts := bytes.Split(num, []byte("."))
-			part1 := parts[0]
+			numberParts := bytes.Split(num, []byte("."))
+			integerPart := numberParts[0]
 
-			hasLeading0 := len(part1) > 1 && part1[0] == '0'
-			hasFollowingX := len(part1) > 1 && (part1[1] == 'x' || part1[1] == 'X')
+			hasLeadingZero := len(integerPart) > 1 && integerPart[0] == '0'
+			hasHexPrefix := len(integerPart) > 1 && (integerPart[1] == 'x' || integerPart[1] == 'X')
 
-			if hasLeading0 && !hasFollowingX {
+			// if not does not start with 0X or 0x
+			if hasLeadingZero && !hasHexPrefix {
 				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 			}
 
@@ -285,7 +298,7 @@ func (l *Lexer) Token() Token {
 			}
 
 			if isNaNum {
-				return NewToken(NUMBER, NaN, l.input[pos:], l.line, pos, nil)
+				return NewToken(NUMBER, NaN, num, l.line, pos, nil)
 			}
 
 			isInfinity := isInf(num)
@@ -295,23 +308,23 @@ func (l *Lexer) Token() Token {
 			}
 
 			if isInfinity {
-				return NewToken(NUMBER, INF, l.input[pos:], l.line, pos, nil)
+				return NewToken(NUMBER, INF, num, l.line, pos, nil)
+			}
+
+			if isInteger(num) {
+				return NewToken(NUMBER, INTEGER, num, l.line, pos, nil)
 			}
 
 			if startsOrEndsWithDot(num) && !l.config.AllowPointEdgeNumbers {
 				return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 			}
 
-			if isInteger(num) {
-				return NewToken(NUMBER, INTEGER, l.input[pos:], l.line, pos, nil)
-			}
-
 			if isFloat(num) {
-				return NewToken(NUMBER, FLOAT, l.input[pos:], l.line, pos, nil)
+				return NewToken(NUMBER, FLOAT, num, l.line, pos, nil)
 			}
 
 			if isScientificNotation(num) {
-				return NewToken(NUMBER, SCI_NOT, l.input[pos:], l.line, pos, nil)
+				return NewToken(NUMBER, SCI_NOT, num, l.line, pos, nil)
 			}
 
 			isHexDec := isHex(num)
@@ -320,21 +333,26 @@ func (l *Lexer) Token() Token {
 			}
 
 			if isHexDec {
-				return NewToken(NUMBER, HEX, l.input[pos:], l.line, pos, nil)
+				return NewToken(NUMBER, HEX, num, l.line, pos, nil)
 			}
 
 		}
+
+		for range count {
+			l.unReadChar()
+		}
+
 		// Lexing number ends here
 
 		// Lexing ident starts here
-		if IsPossibleJSIdentifier(l.char) {
+		if isPossibleJSIdentifier(l.char) {
 			l.readChar()
 
-			for IsPossibleJSIdentifier(l.char) {
+			for isPossibleJSIdentifier(l.char) {
 				l.readChar()
 			}
 
-			if l.config.AllowUnquoted && IsJSIdentifier(l.input[pos:l.pos]) {
+			if l.config.AllowUnquoted && !startsWithDigit(l.input[pos:l.pos]) {
 				return NewToken(STRING, IDENT, l.input[pos:l.pos], l.line, pos, nil)
 			}
 		}
@@ -376,6 +394,23 @@ func (l *Lexer) readChar() {
 
 	l.pos = l.readPos
 	l.readPos++
+}
+
+// unreadChar moves the lexer back by one character in the input,
+// updating the current character, position, and line counters as needed.
+func (l *Lexer) unReadChar() {
+	if l.pos == 0 {
+		return
+	}
+
+	l.readPos = l.pos
+	l.pos--
+
+	l.char = l.input[l.pos]
+
+	if l.char == '\n' {
+		l.line--
+	}
 }
 
 // peek returns the next character in the input without advancing the lexer.

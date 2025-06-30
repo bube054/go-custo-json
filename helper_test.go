@@ -110,39 +110,6 @@ func BenchmarkIs4HexDigits(b *testing.B) {
 	}
 }
 
-func TestIsJSIdentifier(t *testing.T) {
-	var tests = []struct {
-		msg      string
-		p1       []byte
-		expected bool
-	}{
-		// Valid js indent
-		{msg: "Latin letter with accent", p1: []byte("café"), expected: true},
-		{msg: "German umlaut", p1: []byte("über"), expected: true},
-		{msg: "'ï' is a Unicode letter", p1: []byte("naïve"), expected: true},
-		{msg: "Cyrillic (Russian)", p1: []byte("привет"), expected: true},
-		{msg: "Greek", p1: []byte("κόσμος"), expected: true},
-		{msg: "Chinese (means \"variable\")", p1: []byte("变量"), expected: true},
-		{msg: "Arabic (means \"variable\")", p1: []byte("متغير"), expected: true},
-		{msg: "Hindi (Devanagari script)", p1: []byte("फ़ाइल"), expected: true},
-
-		// Invalid js indent
-		{msg: "starts with a digit", p1: []byte("1variable"), expected: false},
-		{msg: "hyphen is not allowed", p1: []byte("var-name"), expected: false},
-		{msg: "emoji is *not* a letter", p1: []byte("💻"), expected: false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.msg, func(t *testing.T) {
-			got := IsJSIdentifier(test.p1)
-
-			if got != test.expected {
-				t.Errorf("got %t, expected %t", got, test.expected)
-			}
-		})
-	}
-}
-
 func TestIsPossibleJSIdentifier(t *testing.T) {
 	var tests = []struct {
 		msg      string
@@ -164,7 +131,7 @@ func TestIsPossibleJSIdentifier(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
-			got := IsPossibleJSIdentifier(test.p1)
+			got := isPossibleJSIdentifier(test.p1)
 
 			if got != test.expected {
 				t.Errorf("got %t, expected %t", got, test.expected)
