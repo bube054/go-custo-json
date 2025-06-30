@@ -11,8 +11,8 @@ type TokenSubKind int
 const (
 	NONE TokenSubKind = iota // NONE represents the absence of a sub kind.
 
-	STRING_VALUE // STRING_VALUE represents a quoted string value.
-	IDENT        // IDENT represents an unquoted identifier.
+	QUOTED // Quoted represents a quoted string value.
+	IDENT  // IDENT represents an unquoted identifier.
 
 	INTEGER // INTEGER represents an integer (positive or negative).
 	FLOAT   // FLOAT represents a floating-point number (positive or negative).
@@ -26,7 +26,7 @@ const (
 func (t TokenSubKind) String() string {
 	m := map[TokenSubKind]string{
 		0: "NONE",
-		1: "STRING_VALUE",
+		1: "QUOTED",
 		2: "IDENT",
 		3: "INTEGER",
 		4: "FLOAT",
@@ -55,6 +55,7 @@ const (
 	TRUE                                // TRUE represents a boolean true.
 	FALSE                               // FALSE represents a boolean false.
 	COMMA                               // COMMA represents a ',' separator.
+	COLON                               // COLON represents a ':' separator.
 	LEFT_SQUARE_BRACE                   // LEFT_SQUARE_BRACE represents '['.
 	RIGHT_SQUARE_BRACE                  // RIGHT_SQUARE_BRACE represents ']'.
 	LEFT_CURLY_BRACE                    // LEFT_CURLY_BRACE represents '{'.
@@ -75,10 +76,11 @@ func (t TokenKind) String() string {
 		8:  "TRUE",
 		9:  "FALSE",
 		10: "COMMA",
-		11: "LEFT_SQUARE_BRACE",
-		12: "RIGHT_SQUARE_BRACE",
-		13: "LEFT_CURLY_BRACE",
-		14: "RIGHT_CURLY_BRACE",
+		11: "COLON",
+		12: "LEFT_SQUARE_BRACE",
+		13: "RIGHT_SQUARE_BRACE",
+		14: "LEFT_CURLY_BRACE",
+		15: "RIGHT_CURLY_BRACE",
 	}
 
 	str := m[t]
@@ -89,7 +91,7 @@ func (t TokenKind) String() string {
 type Token struct {
 	Kind    TokenKind    // The general kind of the token (e.g., STRING, NUMBER).
 	SubKind TokenSubKind // The specific sub kind within a kind (e.g., INTEGER vs FLOAT).
-	Literal string       // The literal value of the token.
+	Literal []byte       // The literal value of the token.
 	Line    int          // The line number where the token appears.
 	Column  int          // The column number (character position) in the line.
 }
@@ -104,7 +106,7 @@ func NewToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start 
 	return Token{
 		Kind:    kind,
 		SubKind: subKind,
-		Literal: string(literal),
+		Literal: literal,
 		Line:    line,
 		Column:  start,
 	}
@@ -113,17 +115,44 @@ func NewToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start 
 // String returns a human-readable representation of the token.
 func (t Token) String() string {
 	return fmt.Sprintf(
-		"Token{Kind: %s, SubKind: %s, Value: %s, Line: %d, Column: %d}",
+		"Token{Kind: %s, SubKind: %s, Literal: %s, Line: %d, Column: %d}",
 		t.Kind,
 		t.SubKind,
-		t.Literal,
+		string(t.Literal),
 		t.Line,
 		t.Column,
 	)
 }
 
 func (t Token) Value() any {
-	return ""
+	switch t.Kind {
+	case NULL:
+		return nil
+	case FALSE:
+		return false
+	case TRUE:
+		return true
+	case STRING:
+		switch t.SubKind {
+		case QUOTED:
+			return quoteValue(t.Literal)
+		case IDENT:
+			return string(t.Literal)
+		default:
+			return nil
+		}
+	case NUMBER:
+		switch t.SubKind {
+		case INTEGER:
+			return intValue(t.Literal)
+		case FLOAT:
+			return floatValue(t.Literal)
+		default:
+			return nil
+		}
+	default:
+		return nil
+	}
 }
 
 // Tokens is a slice of Token.

@@ -142,7 +142,7 @@ func isPossibleNumber(b byte) bool {
 		b == '0' ||
 		b == 'x' ||
 		b == 'X' ||
-		(b >= 'A' && b <= 'F') || 
+		(b >= 'A' && b <= 'F') ||
 		(b >= 'a' && b <= 'f') ||
 		isDigit(b)
 }
@@ -260,4 +260,32 @@ func isHex(input []byte) bool {
 	}
 
 	return true
+}
+
+func quoteValue(input []byte) string {
+	double := []byte(`"`)
+	single := []byte(`'`)
+
+	end := double
+
+	if bytes.HasPrefix(input, single) {
+		end = single
+	}
+
+	after, _ := bytes.CutPrefix(input, end)
+	before, _ := bytes.CutSuffix(after, end)
+
+	return string(before)
+}
+
+func intValue(input []byte) int64 {
+	num, _ := strconv.ParseInt(string(input), 10, 64)
+
+	return num
+}
+
+func floatValue(input []byte) float64 {
+	num, _ := strconv.ParseFloat(string(input), 64)
+
+	return num
 }

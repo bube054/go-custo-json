@@ -98,6 +98,11 @@ func (l *Lexer) Token() Token {
 		return NewToken(COMMA, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
 		// Lexing right square brace ends here
 
+	// Lexing colon starts here
+	case ':':
+		return NewToken(COLON, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		// Lexing colon ends here
+
 	// Lexing null starts here
 	case 'n':
 		second := l.peekBy(1) // expect 'u'
@@ -256,7 +261,7 @@ func (l *Lexer) Token() Token {
 			return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 		}
 
-		return NewToken(STRING, NONE, l.input[pos:l.readPos], l.line, pos, l.readChar)
+		return NewToken(STRING, QUOTED, l.input[pos:l.readPos], l.line, pos, l.readChar)
 		// Lexing string ends here
 
 	case 0:
@@ -360,6 +365,19 @@ func (l *Lexer) Token() Token {
 
 		return NewToken(ILLEGAL, NONE, l.input[pos:], l.line, pos, nil)
 	}
+}
+
+// NextUsefulToken returns the next non-whitespace token being parsed by the lexer..
+// It skips over any WHITESPACE tokens and stops if it encounters EOF or ILLEGAL.
+func (l *Lexer) NextUsefulToken() Token {
+	tok := l.Token()
+	for tok.Kind == WHITESPACE {
+		if tok.Kind == EOF || tok.Kind == ILLEGAL {
+			return tok
+		}
+		tok = l.Token()
+	}
+	return tok
 }
 
 // Tokens returns a slice of all tokens produced so far by the lexer.
