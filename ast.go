@@ -93,7 +93,6 @@ func (j JSONNumber) Value() any {
 }
 
 type JSONArray struct {
-	// token Token
 	items []JSONNode
 }
 

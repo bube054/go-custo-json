@@ -11,8 +11,9 @@ type TokenSubKind int
 const (
 	NONE TokenSubKind = iota // NONE represents the absence of a sub kind.
 
-	QUOTED // Quoted represents a quoted string value.
-	IDENT  // IDENT represents an unquoted identifier.
+	SINGLE_QUOTED // SINGLE_QUOTED represents a single quoted string value.
+	DOUBLE_QUOTED // DOUBLE_QUOTED represents a double quoted string value.
+	IDENT         // IDENT represents an unquoted identifier.
 
 	INTEGER // INTEGER represents an integer (positive or negative).
 	FLOAT   // FLOAT represents a floating-point number (positive or negative).
@@ -20,24 +21,69 @@ const (
 	HEX     // HEX represents a hexadecimal number (e.g., 0xFF).
 	INF     // INF represents an Infinity literal (positive or negative).
 	NaN     // NaN represents a Not-a-Number literal.
+
+	LINE_COMMENT  // LINE_COMMENT represents a single-line comment (// ...).
+	BLOCK_COMMENT // BLOCK_COMMENT represents a block comment (/* ... */).
+
+	INVALID_CHARACTER      // INVALID_CHARACTER represents an invalid or unexpected character.
+	INVALID_WHITESPACE     // INVALID_WHITESPACE represents an invalid or misplaced whitespace.
+	INVALID_NULL           // INVALID_NULL represents an invalid 'null' literal.
+	INVALID_TRUE           // INVALID_TRUE represents an invalid 'true' literal.
+	INVALID_FALSE          // INVALID_FALSE represents an invalid 'false' literal.
+	INVALID_COMMENT        // INVALID_COMMENT represents an improperly formed comment.
+	INVALID_LINE_COMMENT   // INVALID_LINE_COMMENT represents a malformed single-line comment.
+	INVALID_BLOCK_COMMENT  // INVALID_BLOCK_COMMENT represents a malformed block comment.
+	INVALID_STRING         // INVALID_STRING represents a malformed or unterminated string.
+	INVALID_HEX_STRING     // INVALID_HEX_STRING represents an invalid hexadecimal string.
+	INVALID_NEWLINE_STRING // INVALID_NEWLINE_STRING represents a string that contains an invalid newline.
+	INVALID_ESCAPED_STRING // INVALID_ESCAPED_STRING represents a string with an invalid escape sequence.
+	INVALID_LEADING_ZERO   // INVALID_LEADING_ZERO represents a number with an invalid leading zero.
+	INVALID_LEADING_PLUS   // INVALID_LEADING_PLUS represents a number with an invalid leading plus sign.
+	INVALID_NaN            // INVALID_NaN represents a malformed NaN literal.
+	INVALID_INF            // INVALID_INF represents a malformed Infinity literal.
+	INVALID_POINT_EDGE_DOT // INVALID_POINT_EDGE_DOT represents a number with a misplaced or standalone dot.
+	INVALID_HEX_NUMBER     // INVALID_HEX_NUMBER represents a malformed hexadecimal number.
 )
 
 // String returns a string representation of the TokenSubKind.
 func (t TokenSubKind) String() string {
 	m := map[TokenSubKind]string{
-		0: "NONE",
-		1: "QUOTED",
-		2: "IDENT",
-		3: "INTEGER",
-		4: "FLOAT",
-		5: "SCI_NOT",
-		6: "HEX",
-		7: "INF",
-		8: "NaN",
+		NONE:                   "NONE",
+		SINGLE_QUOTED:          "SINGLE_QUOTED",
+		DOUBLE_QUOTED:          "DOUBLE_QUOTED",
+		IDENT:                  "IDENT",
+		INTEGER:                "INTEGER",
+		FLOAT:                  "FLOAT",
+		SCI_NOT:                "SCI_NOT",
+		HEX:                    "HEX",
+		INF:                    "INF",
+		NaN:                    "NaN",
+		LINE_COMMENT:           "LINE_COMMENT",
+		BLOCK_COMMENT:          "BLOCK_COMMENT",
+		INVALID_CHARACTER:      "INVALID_CHARACTER",
+		INVALID_WHITESPACE:     "INVALID_WHITESPACE",
+		INVALID_NULL:           "INVALID_NULL",
+		INVALID_TRUE:           "INVALID_TRUE",
+		INVALID_FALSE:          "INVALID_FALSE",
+		INVALID_COMMENT:        "INVALID_COMMENT",
+		INVALID_LINE_COMMENT:   "INVALID_LINE_COMMENT",
+		INVALID_BLOCK_COMMENT:  "INVALID_BLOCK_COMMENT",
+		INVALID_STRING:         "INVALID_STRING",
+		INVALID_HEX_STRING:     "INVALID_HEX_STRING",
+		INVALID_NEWLINE_STRING: "INVALID_NEWLINE_STRING",
+		INVALID_ESCAPED_STRING: "INVALID_ESCAPED_STRING",
+		INVALID_LEADING_ZERO:   "INVALID_LEADING_ZERO",
+		INVALID_LEADING_PLUS:   "INVALID_LEADING_PLUS",
+		INVALID_NaN:            "INVALID_NaN",
+		INVALID_INF:            "INVALID_INF",
+		INVALID_POINT_EDGE_DOT: "INVALID_POINT_EDGE_DOT",
+		INVALID_HEX_NUMBER:     "INVALID_HEX_NUMBER",
 	}
 
-	str := m[t]
-	return str
+	if str, ok := m[t]; ok {
+		return str
+	}
+	return "UNKNOWN"
 }
 
 // TokenKind represents the primary kind of a token, used in lexical analysis.
@@ -47,8 +93,7 @@ const (
 	EOF                TokenKind = iota // EOF indicates the end of input.
 	ILLEGAL                             // ILLEGAL indicates an unrecognized or invalid token.
 	WHITESPACE                          // WHITESPACE represents any space character.
-	LINE_COMMENT                        // LINE_COMMENT represents a single-line comment (// ...).
-	BLOCK_COMMENT                       // BLOCK_COMMENT represents a block comment (/* ... */).
+	COMMENT                             // COMMENT represents a comment
 	STRING                              // STRING represents a string literal.
 	NUMBER                              // NUMBER represents any numeric literal.
 	NULL                                // NULL represents a null value.
@@ -68,19 +113,18 @@ func (t TokenKind) String() string {
 		0:  "EOF",
 		1:  "ILLEGAL",
 		2:  "WHITESPACE",
-		3:  "LINE_COMMENT",
-		4:  "BLOCK_COMMENT",
-		5:  "STRING",
-		6:  "NUMBER",
-		7:  "NULL",
-		8:  "TRUE",
-		9:  "FALSE",
-		10: "COMMA",
-		11: "COLON",
-		12: "LEFT_SQUARE_BRACE",
-		13: "RIGHT_SQUARE_BRACE",
-		14: "LEFT_CURLY_BRACE",
-		15: "RIGHT_CURLY_BRACE",
+		3:  "COMMENT",
+		4:  "STRING",
+		5:  "NUMBER",
+		6:  "NULL",
+		7:  "TRUE",
+		8:  "FALSE",
+		9:  "COMMA",
+		10: "COLON",
+		11: "LEFT_SQUARE_BRACE",
+		12: "RIGHT_SQUARE_BRACE",
+		13: "LEFT_CURLY_BRACE",
+		14: "RIGHT_CURLY_BRACE",
 	}
 
 	str := m[t]
@@ -134,7 +178,7 @@ func (t Token) Value() any {
 		return true
 	case STRING:
 		switch t.SubKind {
-		case QUOTED:
+		case SINGLE_QUOTED, DOUBLE_QUOTED:
 			return quoteValue(t.Literal)
 		case IDENT:
 			return string(t.Literal)
