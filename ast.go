@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 import (
 	"fmt"
@@ -16,11 +16,12 @@ type JSONNull struct {
 }
 
 func (j JSONNull) String() string {
-	return fmt.Sprintf(
-		"JSONNull{Literal: %s, Value: %v}",
-		j.Literal(),
-		j.Value(),
-	)
+	// return fmt.Sprintf(
+	// 	"JSONNull{Literal: %s, Value: %v}",
+	// 	j.Literal(),
+	// 	j.Value(),
+	// )
+	return "null"
 }
 
 func (j JSONNull) Literal() string {

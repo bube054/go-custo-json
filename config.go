@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 import (
 	"fmt"
@@ -69,7 +69,6 @@ func (c *Config) String() string {
 	b.WriteString("}")
 	return b.String()
 }
-
 
 // WithAllowExtraWS is the functional option setters for the AllowExtraWS flag.
 func WithAllowExtraWS(allow bool) func(*Config) {

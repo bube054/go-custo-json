@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 type Json struct {
 }

@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 import (
 	"reflect"
@@ -249,6 +249,15 @@ func TestLexNumber(t *testing.T) {
 
 	RunLexerTests(t, tests)
 }
+
+// func TestXYZ(t *testing.T) {
+// 	b := []byte(`// comment
+// null // comment
+// // comment`)
+// 	lexer := NewLexer(b, NewConfig(WithAllowBlockComments(true), WithAllowLineComments(true)))
+
+// 	fmt.Println(lexer.Tokens())
+// }
 
 func BenchmarkLexerReadChar(b *testing.B) {
 	l := NewLexer([]byte("lexer"), NewConfig())

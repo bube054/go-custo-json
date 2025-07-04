@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ type Lexer struct {
 // It immediately reads the first character to initialize internal state, so the lexer is ready
 // for tokenization right after creation.
 func NewLexer(input []byte, cfg *Config) *Lexer {
-	l := &Lexer{input: input, config: cfg}
+	l := &Lexer{input: input, config: cfg, line: 1}
 	l.readChar()
 	return l
 }
@@ -380,7 +380,7 @@ func (l *Lexer) Token() Token {
 // It skips over any WHITESPACE tokens and stops if it encounters EOF or ILLEGAL.
 func (l *Lexer) NextUsefulToken() Token {
 	tok := l.Token()
-	for tok.Kind == WHITESPACE {
+	for tok.Kind == WHITESPACE || tok.Kind == COMMENT {
 		if tok.Kind == EOF || tok.Kind == ILLEGAL {
 			return tok
 		}
@@ -409,10 +409,6 @@ func (l *Lexer) Tokens() Tokens {
 // readChar advances the lexer to the next character in the input,
 // updating the current character, position, and line counters as needed.
 func (l *Lexer) readChar() {
-	if l.line == 0 {
-		l.line = 1
-	}
-
 	if l.readPos > len(l.input)-1 {
 		l.char = 0
 	} else {
@@ -421,6 +417,10 @@ func (l *Lexer) readChar() {
 
 	l.pos = l.readPos
 	l.readPos++
+
+	if l.char == '\n' {
+		l.line++
+	}
 }
 
 // unreadChar moves the lexer back by one character in the input,

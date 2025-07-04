@@ -1,4 +1,4 @@
-// Package gocustojson provides configurable options for parsing of JSON.
+// Package jsonvx provides configurable options for parsing of JSON.
 //
 // It supports parsing a broad range of JSON syntax variants — from strict [ECMA-404-compliant JSON]
 // to more permissive formats like [JSON5]. The parser behavior can be customized via the Config struct,
@@ -7,10 +7,11 @@
 //
 // [ECMA-404-compliant JSON]: https://datatracker.ietf.org/doc/html/rfc7159
 // [JSON5]: https://json5.org/
-package gocustojson
+package jsonvx
 
 import (
 	"errors"
+	"fmt"
 )
 
 // SyntaxError: JSON.parse: unterminated string literal
@@ -45,21 +46,28 @@ import (
 // SyntaxError: JSON.parse: unexpected character
 // SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
 
+var (
+	ErrJSONSyntax         = errors.New("JSON syntax error")
+	ErrJSONUnexpectedChar = errors.New("unexpected character in JSON input")
+	ErrJSONNoContent      = errors.New("no meaningful content to parse")
+)
+
 type Parser struct {
 	l         *Lexer
 	curToken  Token
 	peekToken Token
+	prevToken Token
 }
 
 func New(input []byte, cfg *Config) Parser {
 	p := Parser{l: NewLexer(input, cfg)}
+	// fmt.Println(p.l.Tokens())
 	p.nextToken()
 	p.nextToken()
 	return p
 }
 
 func (p *Parser) Parse() (JSONNode, error) {
-	var v JSONNode
 	switch p.curToken.Kind {
 	case NULL:
 		return p.parseNull()
@@ -67,35 +75,76 @@ func (p *Parser) Parse() (JSONNode, error) {
 		return p.parseBoolean()
 	case STRING:
 		return p.parseString()
-	case NUMBER:
-		return p.parseNumber()
-	case LEFT_SQUARE_BRACE:
-		return p.parseArray()
-	case LEFT_CURLY_BRACE:
-		return p.parseObject()
+	// case NUMBER:
+	// 	return p.parseNumber()
+	// case LEFT_SQUARE_BRACE:
+	// 	return p.parseArray()
+	// case LEFT_CURLY_BRACE:
+	// 	return p.parseObject()
 	case ILLEGAL:
-		return v, errors.New("illegal character")
+		return p.parseIllegal()
 	default:
-		return v, errors.New("unexpected input")
+		return p.parseDefault()
 	}
 }
 
+func (p *Parser) parseDefault() (JSONNode, error) {
+	// fmt.Println("prev token", p.prevToken)
+	// fmt.Println("current token", p.curToken)
+	// fmt.Println("peek token", p.peekToken)
+
+	if p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF) {
+		return nil, ErrJSONNoContent
+	}
+
+	return nil, fmt.Errorf("%w: %q at line %d, column %d",
+		ErrJSONUnexpectedChar,
+		p.curToken.Literal,
+		p.curToken.Line,
+		p.curToken.Column+1,
+	)
+}
+
+func (p *Parser) parseIllegal() (JSONNode, error) {
+	return nil, fmt.Errorf("%w: %q at line %d, column %d",
+		ErrJSONSyntax,
+		p.curToken.Literal,
+		p.curToken.Line,
+		p.curToken.Column+1,
+	)
+}
+
+func (p *Parser) ensureValidPrimitive() error {
+	if p.expectPrevToken(EOF) && !p.expectPeekToken(EOF) {
+		return fmt.Errorf("%w: %q at line %d, column %d",
+			ErrJSONUnexpectedChar,
+			p.peekToken.Literal,
+			p.peekToken.Line,
+			p.peekToken.Column+1,
+		)
+	}
+	return nil
+}
+
 func (p *Parser) parseNull() (JSONNode, error) {
-	return JSONNull{
-		token: p.curToken,
-	}, nil
+	if err := p.ensureValidPrimitive(); err != nil {
+		return nil, err
+	}
+	return JSONNull{token: p.curToken}, nil
 }
 
 func (p *Parser) parseBoolean() (JSONNode, error) {
-	return JSONBoolean{
-		token: p.curToken,
-	}, nil
+	if err := p.ensureValidPrimitive(); err != nil {
+		return nil, err
+	}
+	return JSONBoolean{token: p.curToken}, nil
 }
 
 func (p *Parser) parseString() (JSONNode, error) {
-	return JSONString{
-		token: p.curToken,
-	}, nil
+	if err := p.ensureValidPrimitive(); err != nil {
+		return nil, err
+	}
+	return JSONString{token: p.curToken}, nil
 }
 
 func (p *Parser) parseNumber() (JSONNode, error) {
@@ -208,8 +257,13 @@ func (p *Parser) parseObject() (JSONNode, error) {
 }
 
 func (p *Parser) nextToken() {
+	p.prevToken = p.curToken
+	// fmt.Println("prevToken", p.prevToken)
 	p.curToken = p.peekToken
+	// fmt.Println("curToken", p.curToken)
 	p.peekToken = p.l.NextUsefulToken()
+	// fmt.Println("peekToken", p.peekToken)
+	// fmt.Println("///////////////////")
 }
 
 func (p *Parser) expectCurToken(kind TokenKind) bool {
@@ -228,12 +282,20 @@ func (p *Parser) expectPeekToken(kind TokenKind) bool {
 	}
 }
 
-func (p *Parser) curTokenIsOneOf(kinds ...TokenKind) bool {
-	for _, kind := range kinds {
-		if p.expectCurToken(kind) {
-			return true
-		}
+func (p *Parser) expectPrevToken(kind TokenKind) bool {
+	if p.prevToken.Kind == kind {
+		return true
+	} else {
+		return false
 	}
-
-	return false
 }
+
+// func (p *Parser) curTokenIsOneOf(kinds ...TokenKind) bool {
+// 	for _, kind := range kinds {
+// 		if p.expectCurToken(kind) {
+// 			return true
+// 		}
+// 	}
+
+// 	return false
+// }

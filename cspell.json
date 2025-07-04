@@ -1,7 +1,6 @@
 {
   "ignoreWords": [
-    "gocustojson",
-    "go-custo-json",
+    "jsonvx",
     "bube054"
   ]
 }

@@ -1,4 +1,4 @@
-package gocustojson
+package jsonvx
 
 import (
 	"fmt"
@@ -136,8 +136,8 @@ type Token struct {
 	Kind    TokenKind    // The general kind of the token (e.g., STRING, NUMBER).
 	SubKind TokenSubKind // The specific sub kind within a kind (e.g., INTEGER vs FLOAT).
 	Literal []byte       // The literal value of the token.
-	Line    int          // The line number where the token appears.
-	Column  int          // The column number (character position) in the line.
+	Line    int          // The line number where the token appears (1-based index).
+	Column  int          // The column position in the line (0-based index).
 }
 
 // NewToken creates and returns a new Token.

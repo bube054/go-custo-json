@@ -1,28 +1,71 @@
-package gocustojson
+package jsonvx
 
 import (
-	"fmt"
+	"errors"
+	"reflect"
 	"testing"
 )
 
-func TestJSONParser(t *testing.T) {
-	// b := []byte(`null`)
-	// b := []byte(`true`)
-	// b := []byte(`false`)
-	// b := []byte(`"abc"`)
-	// b := []byte(`abc`)
-	// b := []byte(`1245`)
-	// b := []byte(` [ null , true , false , "abc" , 418 , ] `)
-	// b := []byte(` [ null , true , false , "abc" , 418 , [1] ] `)
-	b := []byte(`{"key1":"value1","key2":"value2","nullkey": null,"truthy": true,"falsy":false,"numint":12345,"num_float":123.456,"arr":[ null , true , false , "abc" , 418 , ],}`)
+type ParserTest struct {
+	msg          string
+	input        []byte
+	cfg          *Config
+	expectedNode JSONNode
+	expectedErr  error
+}
 
-	p := New(b, NewConfig(WithAllowUnquoted(true)))
-	json, err := p.Parse()
+func RunJSONParserTests(t *testing.T, tests []ParserTest) {
+	for _, test := range tests {
+		t.Run(test.msg, func(t *testing.T) {
+			parser := New(test.input, test.cfg)
+			node, err := parser.Parse()
 
-	if err != nil {
-		t.Errorf("Got: %v", err)
-	} else {
-		fmt.Println(json)
+			if !reflect.DeepEqual(node, test.expectedNode) || !errors.Is(err, test.expectedErr) {
+				t.Errorf("got (%v, %v), expected (%v, %v)", node, err, test.expectedNode, test.expectedErr)
+			}
+		})
+	}
+}
+
+func TestJSONParserNothing(t *testing.T) {
+	var tests = []ParserTest{
+		{msg: "Parse nothing", input: []byte(``), expectedNode: nil, expectedErr: ErrJSONNoContent},
+		{msg: "Parse nothing, with multiple whitespace", input: []byte(` 	 `), expectedNode: nil, expectedErr: ErrJSONNoContent},
+		{msg: "Parse nothing, with line comment", input: []byte(`// line comment`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Parse nothing, with block comment", input: []byte(`/* block comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
 	}
 
+	RunJSONParserTests(t, tests)
+}
+
+func TestJSONParserNull(t *testing.T) {
+	var tests = []ParserTest{
+		{msg: "Parse null", input: []byte(`null`), expectedNode: JSONNull{token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil},
+		{msg: "Parse null, with surrounding whitespace", input: []byte(` null `), expectedNode: JSONNull{token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil},
+		{msg: "Parse null, with line comment", input: []byte(`null // line comment`), expectedNode: JSONNull{token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Parse null, with block comment", input: []byte(`null /*
+		*/`), expectedNode: JSONNull{token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+	}
+
+	RunJSONParserTests(t, tests)
+}
+
+func TestJSONParserBoolean(t *testing.T) {
+	var tests = []ParserTest{
+		// parse false
+		{msg: "Parse false", input: []byte(`false`), expectedNode: JSONBoolean{token: NewToken(FALSE, NONE, []byte("false"), 1, 0, nil)}, expectedErr: nil},
+		{msg: "Parse false, with surrounding whitespace", input: []byte(` false `), expectedNode: JSONBoolean{token: NewToken(FALSE, NONE, []byte("false"), 1, 1, nil)}, expectedErr: nil},
+		{msg: "Parse false, with line comment", input: []byte(`false // line comment`), expectedNode: JSONBoolean{token: NewToken(FALSE, NONE, []byte("false"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Parse false, with block comment", input: []byte(`false /*
+		// */`), expectedNode: JSONBoolean{token: NewToken(FALSE, NONE, []byte("false"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+
+		// parse true
+		{msg: "Parse true", input: []byte(`true`), expectedNode: JSONBoolean{token: NewToken(TRUE, NONE, []byte("true"), 1, 0, nil)}, expectedErr: nil},
+		{msg: "Parse true, with surrounding whitespace", input: []byte(` true `), expectedNode: JSONBoolean{token: NewToken(TRUE, NONE, []byte("true"), 1, 1, nil)}, expectedErr: nil},
+		{msg: "Parse true, with line comment", input: []byte(`true // line comment`), expectedNode: JSONBoolean{token: NewToken(TRUE, NONE, []byte("true"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Parse true, with block comment", input: []byte(`true /*
+		// */`), expectedNode: JSONBoolean{token: NewToken(TRUE, NONE, []byte("true"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+	}
+
+	RunJSONParserTests(t, tests)
 }

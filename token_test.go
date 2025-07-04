@@ -1,2 +1,1 @@
-package gocustojson
-
+package jsonvx
