@@ -289,3 +289,9 @@ func floatValue(input []byte) float64 {
 
 	return num
 }
+
+func sciFicValue(input []byte) float64 {
+	num, _ := strconv.ParseFloat(string(input), 64)
+
+	return num
+}

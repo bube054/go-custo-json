@@ -60,6 +60,9 @@ type Parser struct {
 }
 
 func New(input []byte, cfg *Config) Parser {
+	if cfg == nil {
+		cfg = NewConfig()
+	}
 	p := Parser{l: NewLexer(input, cfg)}
 	// fmt.Println(p.l.Tokens())
 	p.nextToken()
@@ -75,12 +78,12 @@ func (p *Parser) Parse() (JSONNode, error) {
 		return p.parseBoolean()
 	case STRING:
 		return p.parseString()
-	// case NUMBER:
-	// 	return p.parseNumber()
-	// case LEFT_SQUARE_BRACE:
-	// 	return p.parseArray()
-	// case LEFT_CURLY_BRACE:
-	// 	return p.parseObject()
+	case NUMBER:
+		return p.parseNumber()
+	case LEFT_SQUARE_BRACE:
+		return p.parseArray()
+	case LEFT_CURLY_BRACE:
+		return p.parseObject()
 	case ILLEGAL:
 		return p.parseIllegal()
 	default:
@@ -89,12 +92,19 @@ func (p *Parser) Parse() (JSONNode, error) {
 }
 
 func (p *Parser) parseDefault() (JSONNode, error) {
-	// fmt.Println("prev token", p.prevToken)
-	// fmt.Println("current token", p.curToken)
-	// fmt.Println("peek token", p.peekToken)
+	// fmt.Println("prev Token", p.prevToken)
+	// fmt.Println("current Token", p.curToken)
+	// fmt.Println("peek Token", p.peekToken)
 
-	if p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF) {
+	noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
+
+	if noContent {
 		return nil, ErrJSONNoContent
+	}
+
+	if p.expectCurToken(COMMENT) && !p.expectPeekToken(EOF) {
+		p.nextToken()
+		return p.Parse()
 	}
 
 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
@@ -114,91 +124,94 @@ func (p *Parser) parseIllegal() (JSONNode, error) {
 	)
 }
 
-func (p *Parser) ensureValidPrimitive() error {
-	if p.expectPrevToken(EOF) && !p.expectPeekToken(EOF) {
-		return fmt.Errorf("%w: %q at line %d, column %d",
-			ErrJSONUnexpectedChar,
-			p.peekToken.Literal,
-			p.peekToken.Line,
-			p.peekToken.Column+1,
-		)
-	}
-	return nil
-}
-
 func (p *Parser) parseNull() (JSONNode, error) {
-	if err := p.ensureValidPrimitive(); err != nil {
+	if err := p.ensureSingleValidPrimitive(); err != nil {
 		return nil, err
 	}
-	return JSONNull{token: p.curToken}, nil
+	return newJSONNull(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseBoolean() (JSONNode, error) {
-	if err := p.ensureValidPrimitive(); err != nil {
+	if err := p.ensureSingleValidPrimitive(); err != nil {
 		return nil, err
 	}
-	return JSONBoolean{token: p.curToken}, nil
+	return newJSONBoolean(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseString() (JSONNode, error) {
-	if err := p.ensureValidPrimitive(); err != nil {
+	if err := p.ensureSingleValidPrimitive(); err != nil {
 		return nil, err
 	}
-	return JSONString{token: p.curToken}, nil
+
+	if p.curToken.SubKind == IDENT && p.expectPrevToken(EOF) && p.expectPeekToken(EOF) {
+		return nil, fmt.Errorf("%w: %q at line %d, column %d",
+			ErrJSONUnexpectedChar,
+			p.curToken.Literal,
+			p.curToken.Line,
+			p.curToken.Column+1,
+		)
+	}
+
+	return newJSONString(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseNumber() (JSONNode, error) {
-	return JSONNumber{
-		token: p.curToken,
-	}, nil
+	if err := p.ensureSingleValidPrimitive(); err != nil {
+		return nil, err
+	}
+
+	return newJSONNumber(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseArray() (JSONNode, error) {
-	array := JSONArray{items: []JSONNode{}}
-
+	items := []JSONNode{}
 	p.nextToken()
 
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
-		if p.expectCurToken(EOF) {
-			return array, errors.New("array syntax error")
-		}
-
-		if p.expectCurToken(ILLEGAL) {
-			return array, errors.New("syntax error")
-		}
-
-		if p.expectCurToken(COMMA) {
-			p.nextToken()
-			continue
-		}
-
-		// lastItem := p.expectPeekToken(RIGHT_SQUARE_BRACE)
-		// nextIsComma := p.expectPeekToken(COMMA)
-
-		// if !nextIsComma && !lastItem {
-		// 	return array, errors.New("array comma syntax error")
-		// }
-
 		item, err := p.Parse()
-
 		if err != nil {
-			return array, err
+			return nil, err
 		}
 
-		array.items = append(array.items, item)
+		items = append(items, item)
+
+		hasComma := p.expectCurToken(COMMA)
+		isClosingBracket := p.expectCurToken(RIGHT_SQUARE_BRACE)
+		isNextClosingBracket := p.expectPeekToken(RIGHT_SQUARE_BRACE)
+
+		isTrailingComma := hasComma && isNextClosingBracket
+		isValidArrayEnd := isClosingBracket || isTrailingComma
+
+		if !p.l.config.AllowTrailingCommaArray && isTrailingComma {
+			return nil, fmt.Errorf("%w: %q at line %d, column %d",
+				ErrJSONSyntax,
+				p.curToken.Literal,
+				p.curToken.Line,
+				p.curToken.Column+1,
+			)
+		}
+
+		if !isValidArrayEnd && !hasComma {
+			return nil, fmt.Errorf("%w: %q at line %d, column %d",
+				ErrJSONSyntax,
+				p.curToken.Literal,
+				p.curToken.Line,
+				p.curToken.Column+1,
+			)
+		}
+
+		if isValidArrayEnd {
+			break
+		}
 
 		p.nextToken()
 	}
 
-	for p.expectCurToken(RIGHT_CURLY_BRACE) {
-		p.nextToken()
-	}
-
-	return array, nil
+	return newJSONArray(items, p.nextToken), nil
 }
 
 func (p *Parser) parseObject() (JSONNode, error) {
-	object := JSONObject{properties: map[string]JSONNode{}}
+	object := JSONObject{Properties: map[string]JSONNode{}}
 
 	p.nextToken()
 
@@ -238,7 +251,7 @@ func (p *Parser) parseObject() (JSONNode, error) {
 			return object, errors.New("illegal object value")
 		}
 
-		object.properties[stringNode.Literal()] = value
+		object.Properties[stringNode.Literal()] = value
 
 		p.nextToken()
 
@@ -258,12 +271,8 @@ func (p *Parser) parseObject() (JSONNode, error) {
 
 func (p *Parser) nextToken() {
 	p.prevToken = p.curToken
-	// fmt.Println("prevToken", p.prevToken)
 	p.curToken = p.peekToken
-	// fmt.Println("curToken", p.curToken)
 	p.peekToken = p.l.NextUsefulToken()
-	// fmt.Println("peekToken", p.peekToken)
-	// fmt.Println("///////////////////")
 }
 
 func (p *Parser) expectCurToken(kind TokenKind) bool {
@@ -290,12 +299,20 @@ func (p *Parser) expectPrevToken(kind TokenKind) bool {
 	}
 }
 
-// func (p *Parser) curTokenIsOneOf(kinds ...TokenKind) bool {
-// 	for _, kind := range kinds {
-// 		if p.expectCurToken(kind) {
-// 			return true
-// 		}
-// 	}
+func (p *Parser) ensureSingleValidPrimitive() error {
+	fmt.Println("prev Token", p.prevToken)
+	fmt.Println("current Token", p.curToken)
+	fmt.Println("peek Token", p.peekToken)
 
-// 	return false
-// }
+	valueThenSomething := p.expectPrevToken(EOF) && !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
+
+	if valueThenSomething {
+		return fmt.Errorf("%w: %q at line %d, column %d",
+			ErrJSONUnexpectedChar,
+			p.peekToken.Literal,
+			p.peekToken.Line,
+			p.peekToken.Column+1,
+		)
+	}
+	return nil
+}

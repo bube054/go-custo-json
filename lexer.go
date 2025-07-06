@@ -15,9 +15,11 @@ type Lexer struct {
 	input  []byte  // input is the raw byte slice being tokenized.
 	config *Config // config holds the parsing options that control how the lexer interprets input.
 
-	line    int // line tracks the current line number in the input (starting from 1).
-	pos     int // pos is the current character offset in the input (starting from 0).
-	readPos int // char is the current character under examination.
+	line       int // line tracks the current line number in the input (starting from 1).
+	column     int
+	lastColumn int
+	pos        int // pos is the current character offset in the input (starting from 0).
+	readPos    int // char is the current character under examination.
 
 	char byte // readPos is the next position to be read.
 }
@@ -27,7 +29,7 @@ type Lexer struct {
 // It immediately reads the first character to initialize internal state, so the lexer is ready
 // for tokenization right after creation.
 func NewLexer(input []byte, cfg *Config) *Lexer {
-	l := &Lexer{input: input, config: cfg, line: 1}
+	l := &Lexer{input: input, config: cfg, line: 1, column: 0}
 	l.readChar()
 	return l
 }
@@ -48,6 +50,7 @@ func (l *Lexer) Token() Token {
 	}
 
 	pos := l.pos
+	// col := l.column
 	char := l.char
 	nextChar := l.peek()
 
@@ -59,7 +62,7 @@ func (l *Lexer) Token() Token {
 		'\n', // line feed (U+000A)
 		'\r', // carriage return (U+000D)
 		'\t': // horizontal tab (U+0009)
-		return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
+		return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.column, l.readChar)
 
 	case
 		'\v',     // vertical tab (U+000B)
@@ -67,9 +70,9 @@ func (l *Lexer) Token() Token {
 		'\u0085', // next line (NEL, U+0085)
 		'\u00A0': // no-break space (U+00A0)
 		if l.config.AllowExtraWS {
-			return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.pos, l.readChar)
+			return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, l.column, l.readChar)
 		} else {
-			return NewToken(ILLEGAL, INVALID_WHITESPACE, l.input[l.pos:], l.line, l.pos, nil)
+			return NewToken(ILLEGAL, INVALID_WHITESPACE, l.input[l.pos:], l.line, l.column, nil)
 		}
 		// Lexing white space ends here
 
@@ -380,7 +383,7 @@ func (l *Lexer) Token() Token {
 // It skips over any WHITESPACE tokens and stops if it encounters EOF or ILLEGAL.
 func (l *Lexer) NextUsefulToken() Token {
 	tok := l.Token()
-	for tok.Kind == WHITESPACE || tok.Kind == COMMENT {
+	for tok.Kind == WHITESPACE {
 		if tok.Kind == EOF || tok.Kind == ILLEGAL {
 			return tok
 		}
@@ -420,6 +423,10 @@ func (l *Lexer) readChar() {
 
 	if l.char == '\n' {
 		l.line++
+		l.lastColumn = l.column
+		l.column = 0
+	} else {
+		l.column++
 	}
 }
 
@@ -437,6 +444,9 @@ func (l *Lexer) unReadChar() {
 
 	if l.char == '\n' {
 		l.line--
+		l.column = l.lastColumn
+	} else {
+		l.column--
 	}
 }
 

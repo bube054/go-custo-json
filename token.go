@@ -191,6 +191,8 @@ func (t Token) Value() any {
 			return intValue(t.Literal)
 		case FLOAT:
 			return floatValue(t.Literal)
+		case SCI_NOT:
+			return sciFicValue(t.Literal)
 		default:
 			return nil
 		}

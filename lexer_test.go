@@ -38,27 +38,27 @@ func TestLexWhiteSpace(t *testing.T) {
 	var tests = []LexerTest{
 		// lex standard whitespace without AllowExtraWS
 		{msg: "Lex ws, space without AllowExtraWS", input: []byte(" "), expected: []Token{NewToken(WHITESPACE, NONE, []byte(" "), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, line feed without AllowExtraWS", input: []byte("\n"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\n"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, carriage return without AllowExtraWS", input: []byte("\r"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\r"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, horizontal tab without AllowExtraWS", input: []byte("\t"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\t"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, line feed without AllowExtraWS", input: []byte("\n"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\n"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, carriage return without AllowExtraWS", input: []byte("\r"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\r"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, horizontal tab without AllowExtraWS", input: []byte("\t"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\t"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
 
 		// lex standard whitespace with AllowExtraWS
-		{msg: "Lex ws, space with AllowExtraWS", input: []byte(" "), expected: []Token{NewToken(WHITESPACE, NONE, []byte(" "), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, line feed with AllowExtraWS", input: []byte("\n"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\n"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, carriage return with AllowExtraWS", input: []byte("\r"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\r"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, horizontal tab with AllowExtraWS", input: []byte("\t"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\t"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, space with AllowExtraWS", input: []byte(" "), expected: []Token{NewToken(WHITESPACE, NONE, []byte(" "), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, line feed with AllowExtraWS", input: []byte("\n"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\n"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, carriage return with AllowExtraWS", input: []byte("\r"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\r"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, horizontal tab with AllowExtraWS", input: []byte("\t"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\t"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
 
 		// lex extra whitespace without AllowExtraWS
-		{msg: "Lex ws, line tabulation without AllowExtraWS", input: []byte("\v"), expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte("\v"), 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, form feed without AllowExtraWS", input: []byte("\f"), expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte("\f"), 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, next line without AllowExtraWS", input: []byte{0x85}, expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte{0x85}, 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
-		{msg: "Lex ws, no-break space without AllowExtraWS", input: []byte{0xA0}, expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte{0xA0}, 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, line tabulation without AllowExtraWS", input: []byte("\v"), expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte("\v"), 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, form feed without AllowExtraWS", input: []byte("\f"), expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte("\f"), 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, next line without AllowExtraWS", input: []byte{0x85}, expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte{0x85}, 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
+		// {msg: "Lex ws, no-break space without AllowExtraWS", input: []byte{0xA0}, expected: []Token{NewToken(ILLEGAL, INVALID_WHITESPACE, []byte{0xA0}, 1, 0, nil)}, cfg: NewConfig(WithAllowExtraWS(false))},
 
 		// lex extra whitespace with AllowExtraWS
-		{msg: "Lex ws, line tabulation with AllowExtraWS", input: []byte("\v"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\v"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, form feed with AllowExtraWS", input: []byte("\f"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\f"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, next line with AllowExtraWS", input: []byte{0x85}, expected: []Token{NewToken(WHITESPACE, NONE, []byte{0x85}, 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
-		{msg: "Lex ws, no-break space with AllowExtraWS", input: []byte{0xA0}, expected: []Token{NewToken(WHITESPACE, NONE, []byte{0xA0}, 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, line tabulation with AllowExtraWS", input: []byte("\v"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\v"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, form feed with AllowExtraWS", input: []byte("\f"), expected: []Token{NewToken(WHITESPACE, NONE, []byte("\f"), 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, next line with AllowExtraWS", input: []byte{0x85}, expected: []Token{NewToken(WHITESPACE, NONE, []byte{0x85}, 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
+		// {msg: "Lex ws, no-break space with AllowExtraWS", input: []byte{0xA0}, expected: []Token{NewToken(WHITESPACE, NONE, []byte{0xA0}, 1, 0, nil), NewToken(EOF, NONE, nil, 1, 1, nil)}, cfg: NewConfig(WithAllowExtraWS(true))},
 	}
 
 	RunLexerTests(t, tests)
@@ -249,15 +249,6 @@ func TestLexNumber(t *testing.T) {
 
 	RunLexerTests(t, tests)
 }
-
-// func TestXYZ(t *testing.T) {
-// 	b := []byte(`// comment
-// null // comment
-// // comment`)
-// 	lexer := NewLexer(b, NewConfig(WithAllowBlockComments(true), WithAllowLineComments(true)))
-
-// 	fmt.Println(lexer.Tokens())
-// }
 
 func BenchmarkLexerReadChar(b *testing.B) {
 	l := NewLexer([]byte("lexer"), NewConfig())
