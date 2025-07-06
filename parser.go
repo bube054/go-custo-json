@@ -59,11 +59,12 @@ type Parser struct {
 	prevToken Token
 }
 
-func New(input []byte, cfg *Config) Parser {
-	if cfg == nil {
-		cfg = NewConfig()
+func New(input []byte, config *Config) Parser {
+	if config == nil {
+		config = NewConfig()
 	}
-	p := Parser{l: NewLexer(input, cfg)}
+	// fmt.Println("\033[1mThis is bold text\033[0m")
+	p := Parser{l: NewLexer(input, config)}
 	// fmt.Println(p.l.Tokens())
 	p.nextToken()
 	p.nextToken()
@@ -96,13 +97,19 @@ func (p *Parser) parseDefault() (JSONNode, error) {
 	// fmt.Println("current Token", p.curToken)
 	// fmt.Println("peek Token", p.peekToken)
 
-	noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
+	// noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
 
-	if noContent {
+	if p.expectCurToken(COMMENT) && p.expectPeekToken(EOF) {
 		return nil, ErrJSONNoContent
 	}
 
-	if p.expectCurToken(COMMENT) && !p.expectPeekToken(EOF) {
+	// if p.expectCurToken(COMMENT) {
+	// if p.expectCurToken(COMMENT) && p.expectPeekToken(COMMENT) {
+	// 	p.nextToken()
+	// 	return p.Parse()
+	// }
+
+	if p.expectCurToken(COMMENT) {
 		p.nextToken()
 		return p.Parse()
 	}
@@ -111,7 +118,7 @@ func (p *Parser) parseDefault() (JSONNode, error) {
 		ErrJSONUnexpectedChar,
 		p.curToken.Literal,
 		p.curToken.Line,
-		p.curToken.Column+1,
+		p.curToken.Column,
 	)
 }
 
@@ -300,18 +307,17 @@ func (p *Parser) expectPrevToken(kind TokenKind) bool {
 }
 
 func (p *Parser) ensureSingleValidPrimitive() error {
-	fmt.Println("prev Token", p.prevToken)
-	fmt.Println("current Token", p.curToken)
-	fmt.Println("peek Token", p.peekToken)
+	prevIsEOFOrComment := p.expectPrevToken(EOF) || p.expectPrevToken(COMMENT)
+	peekIsNotEOFOrComment := !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
 
-	valueThenSomething := p.expectPrevToken(EOF) && !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
+	shouldReportUnexpectedValue := prevIsEOFOrComment && peekIsNotEOFOrComment
 
-	if valueThenSomething {
+	if shouldReportUnexpectedValue {
 		return fmt.Errorf("%w: %q at line %d, column %d",
 			ErrJSONUnexpectedChar,
 			p.peekToken.Literal,
 			p.peekToken.Line,
-			p.peekToken.Column+1,
+			p.peekToken.Column,
 		)
 	}
 	return nil
