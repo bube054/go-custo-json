@@ -11,7 +11,6 @@ package jsonvx
 
 import (
 	"errors"
-	"fmt"
 )
 
 // SyntaxError: JSON.parse: unterminated string literal
@@ -53,10 +52,19 @@ var (
 )
 
 type Parser struct {
-	l         *Lexer
+	// l         *Lexer
+	// curToken  Token
+	// peekToken Token
+	// prevToken Token
+	tokens Tokens
+	config *Config
+
 	curToken  Token
+	curPos    int
 	peekToken Token
+	peekPos   int
 	prevToken Token
+	prevPos   int
 }
 
 func New(input []byte, config *Config) Parser {
@@ -64,8 +72,16 @@ func New(input []byte, config *Config) Parser {
 		config = NewConfig()
 	}
 	// fmt.Println("\033[1mThis is bold text\033[0m")
-	p := Parser{l: NewLexer(input, config)}
-	// fmt.Println(p.l.Tokens())
+	l := NewLexer(input, config)
+	tokens := l.TokensWithout(WHITESPACE)
+	// fmt.Println(tokens)
+	p := Parser{
+		tokens:  tokens,
+		config:  config,
+		curPos:  -1,
+		peekPos: -1,
+		prevPos: -1,
+	}
 	p.nextToken()
 	p.nextToken()
 	return p
@@ -75,211 +91,239 @@ func (p *Parser) Parse() (JSONNode, error) {
 	switch p.curToken.Kind {
 	case NULL:
 		return p.parseNull()
-	case FALSE, TRUE:
-		return p.parseBoolean()
-	case STRING:
-		return p.parseString()
-	case NUMBER:
-		return p.parseNumber()
-	case LEFT_SQUARE_BRACE:
-		return p.parseArray()
-	case LEFT_CURLY_BRACE:
-		return p.parseObject()
-	case ILLEGAL:
-		return p.parseIllegal()
+	// case FALSE, TRUE:
+	// 	return p.parseBoolean()
+	// case STRING:
+	// 	return p.parseString()
+	// case NUMBER:
+	// 	return p.parseNumber()
+	// case LEFT_SQUARE_BRACE:
+	// 	return p.parseArray()
+	// case LEFT_CURLY_BRACE:
+	// 	return p.parseObject()
+	// case ILLEGAL:
+	// 	return p.parseIllegal()
+	case COMMENT:
+		return p.handleComment()
 	default:
-		return p.parseDefault()
+		return nil, nil
 	}
 }
 
-func (p *Parser) parseDefault() (JSONNode, error) {
-	// fmt.Println("prev Token", p.prevToken)
-	// fmt.Println("current Token", p.curToken)
-	// fmt.Println("peek Token", p.peekToken)
+// func (p *Parser) parseDefault() (JSONNode, error) {
+// 	// fmt.Println("prev Token", p.prevToken)
+// 	// fmt.Println("current Token", p.curToken)
+// 	// fmt.Println("peek Token", p.peekToken)
 
-	// noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
+// 	// noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
 
-	if p.expectCurToken(COMMENT) && p.expectPeekToken(EOF) {
-		return nil, ErrJSONNoContent
-	}
+// 	if p.expectCurToken(COMMENT) && p.expectPeekToken(EOF) {
+// 		return nil, ErrJSONNoContent
+// 	}
 
-	// if p.expectCurToken(COMMENT) {
-	// if p.expectCurToken(COMMENT) && p.expectPeekToken(COMMENT) {
-	// 	p.nextToken()
-	// 	return p.Parse()
-	// }
+// 	// if !p.expectPrevToken(COMMENT) && p.expectCurToken(COMMENT) && !p.expectPeekToken(COMMENT) {
+// 	// 	fmt.Println("prev Token", p.prevToken)
+// 	// 	fmt.Println("current Token", p.curToken)
+// 	// 	fmt.Println("peek Token", p.peekToken)
+// 	// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 	// 		ErrJSONUnexpectedChar,
+// 	// 		p.peekToken.Literal,
+// 	// 		p.peekToken.Line,
+// 	// 		p.peekToken.Column,
+// 	// 	)
+// 	// }
 
-	if p.expectCurToken(COMMENT) {
-		p.nextToken()
-		return p.Parse()
-	}
+// 	// if p.expectCurToken(COMMENT) {
+// 	// if p.expectCurToken(COMMENT) && p.expectPeekToken(COMMENT) {
+// 	// 	p.nextToken()
+// 	// 	return p.Parse()
+// 	// }
 
-	return nil, fmt.Errorf("%w: %q at line %d, column %d",
-		ErrJSONUnexpectedChar,
-		p.curToken.Literal,
-		p.curToken.Line,
-		p.curToken.Column,
-	)
-}
+// 	if p.expectCurToken(COMMENT) {
+// 		p.nextToken()
+// 		return p.Parse()
+// 	}
 
-func (p *Parser) parseIllegal() (JSONNode, error) {
-	return nil, fmt.Errorf("%w: %q at line %d, column %d",
-		ErrJSONSyntax,
-		p.curToken.Literal,
-		p.curToken.Line,
-		p.curToken.Column+1,
-	)
+// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 		ErrJSONUnexpectedChar,
+// 		p.curToken.Literal,
+// 		p.curToken.Line,
+// 		p.curToken.Column,
+// 	)
+// }
+
+// func (p *Parser) parseIllegal() (JSONNode, error) {
+// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 		ErrJSONSyntax,
+// 		p.curToken.Literal,
+// 		p.curToken.Line,
+// 		p.curToken.Column+1,
+// 	)
+// }
+
+func (p *Parser) handleComment() (JSONNode, error) {
+	// return newJSONNull(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseNull() (JSONNode, error) {
-	if err := p.ensureSingleValidPrimitive(); err != nil {
-		return nil, err
-	}
 	return newJSONNull(p.curToken, p.nextToken), nil
 }
 
-func (p *Parser) parseBoolean() (JSONNode, error) {
-	if err := p.ensureSingleValidPrimitive(); err != nil {
-		return nil, err
-	}
-	return newJSONBoolean(p.curToken, p.nextToken), nil
-}
+// func (p *Parser) parseBoolean() (JSONNode, error) {
+// 	if err := p.ensureSingleValidPrimitive(); err != nil {
+// 		return nil, err
+// 	}
+// 	return newJSONBoolean(p.curToken, p.nextToken), nil
+// }
 
-func (p *Parser) parseString() (JSONNode, error) {
-	if err := p.ensureSingleValidPrimitive(); err != nil {
-		return nil, err
-	}
+// func (p *Parser) parseString() (JSONNode, error) {
+// 	if err := p.ensureSingleValidPrimitive(); err != nil {
+// 		return nil, err
+// 	}
 
-	if p.curToken.SubKind == IDENT && p.expectPrevToken(EOF) && p.expectPeekToken(EOF) {
-		return nil, fmt.Errorf("%w: %q at line %d, column %d",
-			ErrJSONUnexpectedChar,
-			p.curToken.Literal,
-			p.curToken.Line,
-			p.curToken.Column+1,
-		)
-	}
+// 	if p.curToken.SubKind == IDENT && p.expectPrevToken(EOF) && p.expectPeekToken(EOF) {
+// 		return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 			ErrJSONUnexpectedChar,
+// 			p.curToken.Literal,
+// 			p.curToken.Line,
+// 			p.curToken.Column+1,
+// 		)
+// 	}
 
-	return newJSONString(p.curToken, p.nextToken), nil
-}
+// 	return newJSONString(p.curToken, p.nextToken), nil
+// }
 
-func (p *Parser) parseNumber() (JSONNode, error) {
-	if err := p.ensureSingleValidPrimitive(); err != nil {
-		return nil, err
-	}
+// func (p *Parser) parseNumber() (JSONNode, error) {
+// 	if err := p.ensureSingleValidPrimitive(); err != nil {
+// 		return nil, err
+// 	}
 
-	return newJSONNumber(p.curToken, p.nextToken), nil
-}
+// 	return newJSONNumber(p.curToken, p.nextToken), nil
+// }
 
-func (p *Parser) parseArray() (JSONNode, error) {
-	items := []JSONNode{}
-	p.nextToken()
+// func (p *Parser) parseArray() (JSONNode, error) {
+// 	items := []JSONNode{}
+// 	p.nextToken()
 
-	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
-		item, err := p.Parse()
-		if err != nil {
-			return nil, err
-		}
+// 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
+// 		item, err := p.Parse()
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-		items = append(items, item)
+// 		items = append(items, item)
 
-		hasComma := p.expectCurToken(COMMA)
-		isClosingBracket := p.expectCurToken(RIGHT_SQUARE_BRACE)
-		isNextClosingBracket := p.expectPeekToken(RIGHT_SQUARE_BRACE)
+// 		hasComma := p.expectCurToken(COMMA)
+// 		isClosingBracket := p.expectCurToken(RIGHT_SQUARE_BRACE)
+// 		isNextClosingBracket := p.expectPeekToken(RIGHT_SQUARE_BRACE)
 
-		isTrailingComma := hasComma && isNextClosingBracket
-		isValidArrayEnd := isClosingBracket || isTrailingComma
+// 		isTrailingComma := hasComma && isNextClosingBracket
+// 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
-		if !p.l.config.AllowTrailingCommaArray && isTrailingComma {
-			return nil, fmt.Errorf("%w: %q at line %d, column %d",
-				ErrJSONSyntax,
-				p.curToken.Literal,
-				p.curToken.Line,
-				p.curToken.Column+1,
-			)
-		}
+// 		if !p.l.config.AllowTrailingCommaArray && isTrailingComma {
+// 			return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 				ErrJSONSyntax,
+// 				p.curToken.Literal,
+// 				p.curToken.Line,
+// 				p.curToken.Column+1,
+// 			)
+// 		}
 
-		if !isValidArrayEnd && !hasComma {
-			return nil, fmt.Errorf("%w: %q at line %d, column %d",
-				ErrJSONSyntax,
-				p.curToken.Literal,
-				p.curToken.Line,
-				p.curToken.Column+1,
-			)
-		}
+// 		if !isValidArrayEnd && !hasComma {
+// 			return nil, fmt.Errorf("%w: %q at line %d, column %d",
+// 				ErrJSONSyntax,
+// 				p.curToken.Literal,
+// 				p.curToken.Line,
+// 				p.curToken.Column+1,
+// 			)
+// 		}
 
-		if isValidArrayEnd {
-			break
-		}
+// 		if isValidArrayEnd {
+// 			break
+// 		}
 
-		p.nextToken()
-	}
+// 		p.nextToken()
+// 	}
 
-	return newJSONArray(items, p.nextToken), nil
-}
+// 	return newJSONArray(items, p.nextToken), nil
+// }
 
-func (p *Parser) parseObject() (JSONNode, error) {
-	object := JSONObject{Properties: map[string]JSONNode{}}
+// func (p *Parser) parseObject() (JSONNode, error) {
+// 	object := JSONObject{Properties: map[string]JSONNode{}}
 
-	p.nextToken()
+// 	p.nextToken()
 
-	for !p.expectCurToken(RIGHT_CURLY_BRACE) {
-		if p.expectCurToken(EOF) {
-			return object, errors.New("object syntax error")
-		}
+// 	for !p.expectCurToken(RIGHT_CURLY_BRACE) {
+// 		if p.expectCurToken(EOF) {
+// 			return object, errors.New("object syntax error")
+// 		}
 
-		if p.expectCurToken(ILLEGAL) {
-			return object, errors.New("syntax error")
-		}
+// 		if p.expectCurToken(ILLEGAL) {
+// 			return object, errors.New("syntax error")
+// 		}
 
-		key, err := p.Parse()
+// 		key, err := p.Parse()
 
-		if err != nil {
-			return object, errors.New("illegal object key")
-		}
+// 		if err != nil {
+// 			return object, errors.New("illegal object key")
+// 		}
 
-		stringNode, ok := key.(JSONString)
-		// _, ok := key.(JSONString)
+// 		stringNode, ok := key.(JSONString)
+// 		// _, ok := key.(JSONString)
 
-		if !ok {
-			return object, errors.New("only object key string required")
-		}
+// 		if !ok {
+// 			return object, errors.New("only object key string required")
+// 		}
 
-		p.nextToken()
+// 		p.nextToken()
 
-		if !p.expectCurToken(COLON) {
-			return object, errors.New("colon object required")
-		}
+// 		if !p.expectCurToken(COLON) {
+// 			return object, errors.New("colon object required")
+// 		}
 
-		p.nextToken()
+// 		p.nextToken()
 
-		value, err := p.Parse()
+// 		value, err := p.Parse()
 
-		if err != nil {
-			return object, errors.New("illegal object value")
-		}
+// 		if err != nil {
+// 			return object, errors.New("illegal object value")
+// 		}
 
-		object.Properties[stringNode.Literal()] = value
+// 		object.Properties[stringNode.Literal()] = value
 
-		p.nextToken()
+// 		p.nextToken()
 
-		if !p.expectCurToken(COMMA) {
-			return object, errors.New("object key pair should end with comma")
-		}
+// 		if !p.expectCurToken(COMMA) {
+// 			return object, errors.New("object key pair should end with comma")
+// 		}
 
-		p.nextToken()
-	}
+// 		p.nextToken()
+// 	}
 
-	for p.expectCurToken(RIGHT_CURLY_BRACE) {
-		p.nextToken()
-	}
+// 	for p.expectCurToken(RIGHT_CURLY_BRACE) {
+// 		p.nextToken()
+// 	}
 
-	return object, nil
-}
+// 	return object, nil
+// }
 
 func (p *Parser) nextToken() {
 	p.prevToken = p.curToken
+	p.prevPos = p.curPos
+	// fmt.Println("prevToken", p.prevToken)
+
 	p.curToken = p.peekToken
-	p.peekToken = p.l.NextUsefulToken()
+	p.curPos = p.peekPos
+	// fmt.Println("curToken", p.curToken)
+
+	if p.peekPos+1 >= len(p.tokens) {
+		p.peekToken = Token{Kind: EOF, SubKind: NONE}
+		p.peekPos = len(p.tokens)
+	} else {
+		p.peekPos++
+		p.peekToken = p.tokens[p.peekPos]
+		// fmt.Println("peekToken", p.peekToken)
+	}
 }
 
 func (p *Parser) expectCurToken(kind TokenKind) bool {
@@ -306,19 +350,19 @@ func (p *Parser) expectPrevToken(kind TokenKind) bool {
 	}
 }
 
-func (p *Parser) ensureSingleValidPrimitive() error {
-	prevIsEOFOrComment := p.expectPrevToken(EOF) || p.expectPrevToken(COMMENT)
-	peekIsNotEOFOrComment := !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
+// func (p *Parser) ensureSingleValidPrimitive() error {
+// 	prevIsEOFOrComment := p.expectPrevToken(EOF) || p.expectPrevToken(COMMENT)
+// 	peekIsNotEOFOrComment := !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
 
-	shouldReportUnexpectedValue := prevIsEOFOrComment && peekIsNotEOFOrComment
+// 	shouldReportUnexpectedValue := prevIsEOFOrComment && peekIsNotEOFOrComment
 
-	if shouldReportUnexpectedValue {
-		return fmt.Errorf("%w: %q at line %d, column %d",
-			ErrJSONUnexpectedChar,
-			p.peekToken.Literal,
-			p.peekToken.Line,
-			p.peekToken.Column,
-		)
-	}
-	return nil
-}
+// 	if shouldReportUnexpectedValue {
+// 		return fmt.Errorf("%w: %q at line %d, column %d",
+// 			ErrJSONUnexpectedChar,
+// 			p.peekToken.Literal,
+// 			p.peekToken.Line,
+// 			p.peekToken.Column,
+// 		)
+// 	}
+// 	return nil
+// }

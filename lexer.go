@@ -379,19 +379,6 @@ func (l *Lexer) Token() Token {
 	}
 }
 
-// NextUsefulToken returns the next non-whitespace token being parsed by the lexer..
-// It skips over any WHITESPACE tokens and stops if it encounters EOF or ILLEGAL.
-func (l *Lexer) NextUsefulToken() Token {
-	tok := l.Token()
-	for tok.Kind == WHITESPACE {
-		if tok.Kind == EOF || tok.Kind == ILLEGAL {
-			return tok
-		}
-		tok = l.Token()
-	}
-	return tok
-}
-
 // Tokens returns a slice of all tokens produced so far by the lexer.
 func (l *Lexer) Tokens() Tokens {
 	tokens := []Token{}
@@ -400,6 +387,25 @@ func (l *Lexer) Tokens() Tokens {
 		token := l.Token()
 
 		tokens = append(tokens, token)
+
+		if token.Kind == EOF || token.Kind == ILLEGAL {
+			break
+		}
+	}
+
+	return tokens
+}
+
+// TokensWithoutWhitespace returns a slice of all tokens without whitespace produced so far by the lexer.
+func (l *Lexer) TokensWithout(kind TokenKind) Tokens {
+	tokens := []Token{}
+
+	for {
+		token := l.Token()
+
+		if token.Kind != kind {
+			tokens = append(tokens, token)
+		}
 
 		if token.Kind == EOF || token.Kind == ILLEGAL {
 			break

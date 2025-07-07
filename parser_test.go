@@ -52,7 +52,7 @@ func TestJSONParserComment(t *testing.T) {
 		// {msg: "Parse multiple block comments", input: []byte(`/* first comment */ /* second comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
 		// {msg: "Parse primitive after line comment", input: []byte("// comment\n null"), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
 		// {msg: "Parse primitive before line comment", input: []byte("null // comment"), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
-		{msg: "Parse primitive before & after line comment", input: []byte("// comment\n null // comment \n null"), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse primitive before & after line comment", input: []byte("// comment\n null // comment \n null"), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
 
 	}
 
@@ -61,9 +61,9 @@ func TestJSONParserComment(t *testing.T) {
 
 func TestJSONParserNull(t *testing.T) {
 	var tests = []ParserTest{
-		// {msg: "Parse null", input: []byte(`null`), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil},
-		// {msg: "Parse null, with surrounding whitespace", input: []byte(` null `), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil},
-		// {msg: "Parse null, with post line comment", input: []byte(`null // line comment`), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse null", input: []byte(`null`), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil},
+		// {msg: "Parse null, with surrounding whitespace", input: []byte(` null `), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 2, nil)}, expectedErr: nil},
+		{msg: "Parse null, with post line comment", input: []byte(`null // line comment`), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
 		// {msg: "Parse null, with post block comment", input: []byte(`null /*
 		// */`), expectedNode: JSONNull{Token: NewToken(NULL, NONE, []byte("null"), 1, 0, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
 
