@@ -5,90 +5,90 @@ import (
 	"strings"
 )
 
-type JSONNode interface {
+type JSON interface {
 	String() string
 	Literal() string
 	Value() any
 }
 
-type JSONNull struct {
+type Null struct {
 	Token Token
 }
 
-func newJSONNull(token Token, cb func()) JSONNull {
+func newJSONNull(token Token, cb func()) Null {
 	if cb != nil {
 		cb()
 	}
 
-	return JSONNull{Token: token}
+	return Null{Token: token}
 }
 
-func (j JSONNull) String() string {
+func (j Null) String() string {
 	// return fmt.Sprintf(
-	// 	"JSONNull{Literal: %s, Value: %v}",
+	// 	"Null{Literal: %s, Value: %v}",
 	// 	j.Literal(),
 	// 	j.Value(),
 	// )
-	return "null"
+	return "\033[1mnull\033[0m"
 }
 
-func (j JSONNull) Literal() string {
+func (j Null) Literal() string {
 	return string(j.Token.Literal)
 }
 
-func (j JSONNull) Value() any {
+func (j Null) Value() any {
 	return j.Token.Value()
 }
 
-type JSONBoolean struct {
+type Boolean struct {
 	Token Token
 }
 
-func newJSONBoolean(token Token, cb func()) JSONBoolean {
+func newJSONBoolean(token Token, cb func()) Boolean {
 	if cb != nil {
 		cb()
 	}
 
-	return JSONBoolean{Token: token}
+	return Boolean{Token: token}
 }
 
-func (j JSONBoolean) String() string {
+func (j Boolean) String() string {
 	// return fmt.Sprintf(
-	// 	"JSONBoolean{Literal: %s, Value: %v}",
+	// 	"Boolean{Literal: %s, Value: %v}",
 	// 	j.Literal(),
 	// 	j.Value(),
 	// )
 
 	if j.Token.Kind == TRUE {
-		return "true"
+		return "\033[1mtrue\033[0m"
 	} else {
-		return "falSE"
+		return "\033[1mfalse\033[0m"
 	}
 }
 
-func (j JSONBoolean) Literal() string {
+func (j Boolean) Literal() string {
 	return string(j.Token.Literal)
 }
 
-func (j JSONBoolean) Value() any {
+func (j Boolean) Value() any {
 	return j.Token.Value()
 }
 
-type JSONString struct {
+type String struct {
 	Token Token
 }
 
-func newJSONString(token Token, cb func()) JSONString {
+func newJSONString(token Token, cb func()) String {
 	if cb != nil {
 		cb()
 	}
 
-	return JSONString{Token: token}
+	return String{Token: token}
 }
 
-func (j JSONString) String() string {
+func (j String) String() string {
 	// return fmt.Sprintf(
-	// 	"JSONString{Literal: %s, Value: %v}",
+	// 	"String{Literal: %s, Value: %v}",
 	// 	j.Literal(),
 	// 	j.Value(),
 	// )
@@ -96,56 +96,56 @@ func (j JSONString) String() string {
 	return string(j.Token.Literal)
 }
 
-func (j JSONString) Literal() string {
+func (j String) Literal() string {
 	return string(j.Token.Literal)
 }
 
-func (j JSONString) Value() any {
+func (j String) Value() any {
 	return j.Token.Value()
 }
 
-type JSONNumber struct {
+type Number struct {
 	Token Token
 }
 
-func newJSONNumber(token Token, cb func()) JSONNumber {
+func newJSONNumber(token Token, cb func()) Number {
 	if cb != nil {
 		cb()
 	}
 
-	return JSONNumber{Token: token}
+	return Number{Token: token}
 }
 
-func (j JSONNumber) String() string {
+func (j Number) String() string {
 	// return fmt.Sprintf(
-	// 	"JSONNumber{Literal: %s, Value: %v}",
+	// 	"Number{Literal: %s, Value: %v}",
 	// 	j.Literal(),
 	// 	j.Value(),
 	// )
 	return string(j.Token.Literal)
 }
 
-func (j JSONNumber) Literal() string {
+func (j Number) Literal() string {
 	return string(j.Token.Literal)
 }
 
-func (j JSONNumber) Value() any {
+func (j Number) Value() any {
 	return j.Token.Value()
 }
 
-type JSONArray struct {
-	Items []JSONNode
+type Array struct {
+	Items []JSON
 }
 
-func newJSONArray(items []JSONNode, cb func()) JSONArray {
+func newJSONArray(items []JSON, cb func()) Array {
 	if cb != nil {
 		cb()
 	}
 
-	return JSONArray{Items: items}
+	return Array{Items: items}
 }
 
-func (j JSONArray) String() string {
+func (j Array) String() string {
 	var builder strings.Builder
 	builder.WriteString("[")
 	for _, item := range j.Items {
@@ -154,7 +154,7 @@ func (j JSONArray) String() string {
 	builder.WriteString("]")
 	return builder.String()
 	// var builder strings.Builder
-	// builder.WriteString("JSONArray{\n")
+	// builder.WriteString("Array{\n")
 	// builder.WriteString(fmt.Sprintf("  Literal: %q,\n", j.Literal()))
 	// builder.WriteString("  Items:\n")
 	// for i, item := range j.Items {
@@ -164,21 +164,21 @@ func (j JSONArray) String() string {
 	// return builder.String()
 }
 
-func (j JSONArray) Literal() string {
+func (j Array) Literal() string {
 	return ""
 }
 
-func (j JSONArray) Value() any {
+func (j Array) Value() any {
 	return j.Items
 }
 
-type JSONObject struct {
-	Properties map[string]JSONNode
+type Object struct {
+	Properties map[string]JSON
 }
 
-func (j JSONObject) String() string {
+func (j Object) String() string {
 	var builder strings.Builder
-	builder.WriteString("JSONObject{\n")
+	builder.WriteString("Object{\n")
 	builder.WriteString(fmt.Sprintf("  Literal: %q,\n", j.Literal()))
 	builder.WriteString("  Properties:\n")
 	for key, value := range j.Properties {
@@ -188,10 +188,10 @@ func (j JSONObject) String() string {
 	return builder.String()
 }
 
-func (j JSONObject) Literal() string {
+func (j Object) Literal() string {
 	return ""
 }
 
-func (j JSONObject) Value() any {
+func (j Object) Value() any {
 	return j.Properties
 }

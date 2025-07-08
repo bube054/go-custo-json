@@ -1,8 +1,16 @@
 package jsonvx
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+)
+
+var (
+	ErrIllegalToken             = errors.New("illegal token encountered")
+	ErrUnexpectedToken          = errors.New("unexpected token encountered")
+	ErrUnbalancedArrayBrackets  = errors.New("unbalanced brackets in array")
+	ErrUnbalancedObjectBrackets = errors.New("unbalanced brackets in object")
 )
 
 // TokenSubKind represents the subtype of a token, such as numeric format or identifier type.
@@ -205,12 +213,93 @@ func (t Token) Value() any {
 type Tokens []Token
 
 // String returns a formatted string listing all tokens in the slice.
-func (t Tokens) String() string {
-	parts := make([]string, len(t))
+func (tks Tokens) String() string {
+	parts := make([]string, len(tks))
 
-	for i, token := range t {
+	for i, token := range tks {
 		parts[i] = token.String()
 	}
 
 	return fmt.Sprintf("\n[\n%s\n]\n", strings.Join(parts, ",\n"))
+}
+
+func (tks Tokens) Split() ([][2]int, error) {
+	count := 0
+	streams := [][2]int{}
+	// fmt.Println(tks)
+
+	for count < len(tks) {
+		token := tks[count]
+		switch token.Kind {
+		case NULL, TRUE, FALSE, STRING, NUMBER:
+			streams = append(streams, [2]int{count, count})
+			count++
+		case COMMENT, WHITESPACE, EOF:
+			count++
+		case LEFT_SQUARE_BRACE:
+			start := count
+			count++
+			lc := 1
+			rc := 0
+
+			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
+				rc++
+				count++
+			}
+
+			for lc != rc {
+				if count >= len(tks) {
+					return streams, ErrUnbalancedArrayBrackets
+				}
+				tok := tks[count]
+
+				if tok.Kind == LEFT_SQUARE_BRACE {
+					lc++
+				}
+
+				if tok.Kind == RIGHT_SQUARE_BRACE {
+					rc++
+				}
+				count++
+			}
+
+			streams = append(streams, [2]int{start, count - 1})
+		case LEFT_CURLY_BRACE:
+			start := count
+			count++
+			lc := 1
+			rc := 0
+
+			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
+				rc++
+				count++
+			}
+
+			for lc != rc {
+				if count >= len(tks) {
+					return streams, ErrUnbalancedObjectBrackets
+				}
+				tok := tks[count]
+
+				if tok.Kind == LEFT_CURLY_BRACE {
+					lc++
+				}
+
+				if tok.Kind == RIGHT_CURLY_BRACE {
+					rc++
+				}
+				count++
+			}
+
+			streams = append(streams, [2]int{start, count - 1})
+		case ILLEGAL:
+			streams = append(streams, [2]int{count, count})
+			return streams, ErrIllegalToken
+		default:
+			streams = append(streams, [2]int{count, count})
+			return streams, ErrUnexpectedToken
+		}
+	}
+
+	return streams, nil
 }

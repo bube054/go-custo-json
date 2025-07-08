@@ -11,6 +11,7 @@ package jsonvx
 
 import (
 	"errors"
+	"fmt"
 )
 
 // SyntaxError: JSON.parse: unterminated string literal
@@ -22,7 +23,7 @@ import (
 // SyntaxError: JSON.parse: no number after minus sign
 // SyntaxError: JSON.parse: unexpected non-digit
 // SyntaxError: JSON.parse: missing digits after decimal point
-// SyntaxError: JSON.parse: unterminated fractional number
+// SyntaxError: JSON.parse: unterminated fractional number/
 // SyntaxError: JSON.parse: missing digits after exponent indicator
 // SyntaxError: JSON.parse: missing digits after exponent sign
 // SyntaxError: JSON.parse: exponent part is missing a number
@@ -49,13 +50,10 @@ var (
 	ErrJSONSyntax         = errors.New("JSON syntax error")
 	ErrJSONUnexpectedChar = errors.New("unexpected character in JSON input")
 	ErrJSONNoContent      = errors.New("no meaningful content to parse")
+	ErrJSONMultipleContent = errors.New("multiple JSON values")
 )
 
 type Parser struct {
-	// l         *Lexer
-	// curToken  Token
-	// peekToken Token
-	// prevToken Token
 	tokens Tokens
 	config *Config
 
@@ -67,142 +65,121 @@ type Parser struct {
 	prevPos   int
 }
 
-func New(input []byte, config *Config) Parser {
+func New(config *Config) Parser {
 	if config == nil {
 		config = NewConfig()
 	}
-	// fmt.Println("\033[1mThis is bold text\033[0m")
-	l := NewLexer(input, config)
-	tokens := l.TokensWithout(WHITESPACE)
-	// fmt.Println(tokens)
+
 	p := Parser{
-		tokens:  tokens,
-		config:  config,
-		curPos:  -1,
-		peekPos: -1,
-		prevPos: -1,
+		config: config,
 	}
-	p.nextToken()
-	p.nextToken()
+
 	return p
 }
 
-func (p *Parser) Parse() (JSONNode, error) {
+func (p *Parser) Parse(input []byte) (JSON, error) {
+	l := NewLexer(input, p.config)
+
+	tokens := l.Tokens()
+	chunks, err := tokens.Split()
+	lastIndex := len(chunks) - 1
+
+	if err != nil {
+
+		if lastIndex > 0 && errors.Is(err, ErrIllegalToken) {
+			chunk := chunks[lastIndex]
+			illegalToken := tokens[chunk[0]]
+			return nil, WrapJSONUnexpectedCharError(illegalToken)
+		}
+
+		if lastIndex > 0 && errors.Is(err, ErrUnexpectedToken) {
+			chunk := chunks[lastIndex]
+			illegalToken := tokens[chunk[0]]
+			return nil, WrapJSONUnexpectedCharError(illegalToken)
+		}
+
+		return nil, err
+	}
+
+	if len(chunks) == 0 {
+		return nil, ErrJSONNoContent
+	}
+
+	if lastIndex > 0 && len(chunks) != 1 {
+		chunk := chunks[lastIndex]
+		extraToken := tokens[chunk[0]]
+		return nil, WrapJSONMultipleContentError(extraToken)
+	}
+
+	chunk := chunks[0]
+	p.tokens = tokens[chunk[0] : chunk[1]+1]
+	p.curPos = -1
+	p.curToken = Token{Kind: EOF}
+	p.peekPos = -1
+	p.peekToken = Token{Kind: EOF}
+	p.prevPos = -1
+	p.prevToken = Token{Kind: EOF}
+
+	p.nextToken()
+	p.nextToken()
+
+	return p.parse()
+}
+
+func (p *Parser) parse() (JSON, error) {
 	switch p.curToken.Kind {
 	case NULL:
 		return p.parseNull()
-	// case FALSE, TRUE:
-	// 	return p.parseBoolean()
-	// case STRING:
-	// 	return p.parseString()
-	// case NUMBER:
-	// 	return p.parseNumber()
+	case FALSE, TRUE:
+		return p.parseBoolean()
+	case STRING:
+		return p.parseString()
+	case NUMBER:
+		return p.parseNumber()
 	// case LEFT_SQUARE_BRACE:
-	// 	return p.parseArray()
+		// return p.parseArray()
 	// case LEFT_CURLY_BRACE:
 	// 	return p.parseObject()
-	// case ILLEGAL:
-	// 	return p.parseIllegal()
-	case COMMENT:
-		return p.handleComment()
+	case ILLEGAL:
+		return p.parseIllegal()
 	default:
-		return nil, nil
+		return p.parseDefault()
 	}
 }
 
-// func (p *Parser) parseDefault() (JSONNode, error) {
-// 	// fmt.Println("prev Token", p.prevToken)
-// 	// fmt.Println("current Token", p.curToken)
-// 	// fmt.Println("peek Token", p.peekToken)
-
-// 	// noContent := p.expectPrevToken(EOF) && p.expectCurToken(EOF) && p.expectPeekToken(EOF)
-
-// 	if p.expectCurToken(COMMENT) && p.expectPeekToken(EOF) {
-// 		return nil, ErrJSONNoContent
-// 	}
-
-// 	// if !p.expectPrevToken(COMMENT) && p.expectCurToken(COMMENT) && !p.expectPeekToken(COMMENT) {
-// 	// 	fmt.Println("prev Token", p.prevToken)
-// 	// 	fmt.Println("current Token", p.curToken)
-// 	// 	fmt.Println("peek Token", p.peekToken)
-// 	// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 	// 		ErrJSONUnexpectedChar,
-// 	// 		p.peekToken.Literal,
-// 	// 		p.peekToken.Line,
-// 	// 		p.peekToken.Column,
-// 	// 	)
-// 	// }
-
-// 	// if p.expectCurToken(COMMENT) {
-// 	// if p.expectCurToken(COMMENT) && p.expectPeekToken(COMMENT) {
-// 	// 	p.nextToken()
-// 	// 	return p.Parse()
-// 	// }
-
-// 	if p.expectCurToken(COMMENT) {
-// 		p.nextToken()
-// 		return p.Parse()
-// 	}
-
-// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 		ErrJSONUnexpectedChar,
-// 		p.curToken.Literal,
-// 		p.curToken.Line,
-// 		p.curToken.Column,
-// 	)
-// }
-
-// func (p *Parser) parseIllegal() (JSONNode, error) {
-// 	return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 		ErrJSONSyntax,
-// 		p.curToken.Literal,
-// 		p.curToken.Line,
-// 		p.curToken.Column+1,
-// 	)
-// }
-
-func (p *Parser) handleComment() (JSONNode, error) {
-	// return newJSONNull(p.curToken, p.nextToken), nil
+func (p *Parser) parseDefault() (JSON, error) {
+	// fmt.Println("prev Token", p.prevToken)
+	// fmt.Println("current Token", p.curToken)
+	// fmt.Println("peek Token", p.peekToken)
+	return nil, WrapJSONUnexpectedCharError(p.curToken)
 }
 
-func (p *Parser) parseNull() (JSONNode, error) {
+func (p *Parser) parseIllegal() (JSON, error) {
+	return nil, WrapJSONUnexpectedCharError(p.curToken)
+}
+
+// func (p *Parser) handleComment() (JSON, error) {
+// 	return newJSONNull(p.curToken, p.nextToken), nil
+// }
+
+func (p *Parser) parseNull() (JSON, error) {
 	return newJSONNull(p.curToken, p.nextToken), nil
 }
 
-// func (p *Parser) parseBoolean() (JSONNode, error) {
-// 	if err := p.ensureSingleValidPrimitive(); err != nil {
-// 		return nil, err
-// 	}
-// 	return newJSONBoolean(p.curToken, p.nextToken), nil
-// }
+func (p *Parser) parseBoolean() (JSON, error) {
+	return newJSONBoolean(p.curToken, p.nextToken), nil
+}
 
-// func (p *Parser) parseString() (JSONNode, error) {
-// 	if err := p.ensureSingleValidPrimitive(); err != nil {
-// 		return nil, err
-// 	}
+func (p *Parser) parseString() (JSON, error) {
+	return newJSONString(p.curToken, p.nextToken), nil
+}
 
-// 	if p.curToken.SubKind == IDENT && p.expectPrevToken(EOF) && p.expectPeekToken(EOF) {
-// 		return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 			ErrJSONUnexpectedChar,
-// 			p.curToken.Literal,
-// 			p.curToken.Line,
-// 			p.curToken.Column+1,
-// 		)
-// 	}
+func (p *Parser) parseNumber() (JSON, error) {
+	return newJSONNumber(p.curToken, p.nextToken), nil
+}
 
-// 	return newJSONString(p.curToken, p.nextToken), nil
-// }
-
-// func (p *Parser) parseNumber() (JSONNode, error) {
-// 	if err := p.ensureSingleValidPrimitive(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return newJSONNumber(p.curToken, p.nextToken), nil
-// }
-
-// func (p *Parser) parseArray() (JSONNode, error) {
-// 	items := []JSONNode{}
+// func (p *Parser) parseArray() (JSON, error) {
+// 	items := []JSON{}
 // 	p.nextToken()
 
 // 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
@@ -248,8 +225,8 @@ func (p *Parser) parseNull() (JSONNode, error) {
 // 	return newJSONArray(items, p.nextToken), nil
 // }
 
-// func (p *Parser) parseObject() (JSONNode, error) {
-// 	object := JSONObject{Properties: map[string]JSONNode{}}
+// func (p *Parser) parseObject() (JSON, error) {
+// 	object := JSONObject{Properties: map[string]JSON{}}
 
 // 	p.nextToken()
 
@@ -350,19 +327,22 @@ func (p *Parser) expectPrevToken(kind TokenKind) bool {
 	}
 }
 
-// func (p *Parser) ensureSingleValidPrimitive() error {
-// 	prevIsEOFOrComment := p.expectPrevToken(EOF) || p.expectPrevToken(COMMENT)
-// 	peekIsNotEOFOrComment := !(p.expectPeekToken(EOF) || p.expectPeekToken(COMMENT))
+func WrapUnexpectedCharError(baseErr error, token Token) error {
+	return fmt.Errorf("%w: %q at line %d, column %d", baseErr, token.Literal, token.Line, token.Column)
+}
+func WrapJSONUnexpectedCharError(token Token) error {
+	return WrapUnexpectedCharError(ErrJSONUnexpectedChar, token)
+}
 
-// 	shouldReportUnexpectedValue := prevIsEOFOrComment && peekIsNotEOFOrComment
+func WrapJSONSyntaxError(token Token) error {
+	return WrapUnexpectedCharError(ErrJSONSyntax, token)
+}
 
-// 	if shouldReportUnexpectedValue {
-// 		return fmt.Errorf("%w: %q at line %d, column %d",
-// 			ErrJSONUnexpectedChar,
-// 			p.peekToken.Literal,
-// 			p.peekToken.Line,
-// 			p.peekToken.Column,
-// 		)
-// 	}
-// 	return nil
-// }
+func WrapJSONMultipleContentError(token Token) error {
+	return fmt.Errorf("%w: extra value %q at line %d, column %d",
+		ErrJSONMultipleContent,
+		token.Literal,
+		token.Line,
+		token.Column,
+	)
+}
