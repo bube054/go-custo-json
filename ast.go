@@ -176,6 +176,14 @@ type Object struct {
 	Properties map[string]JSON
 }
 
+func newJSONObject(properties map[string]JSON, cb func()) Object {
+	if cb != nil {
+		cb()
+	}
+
+	return Object{Properties: properties}
+}
+
 func (j Object) String() string {
 	var builder strings.Builder
 	builder.WriteString("Object{\n")

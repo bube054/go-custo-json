@@ -47,9 +47,9 @@ import (
 // SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
 
 var (
-	ErrJSONSyntax         = errors.New("JSON syntax error")
-	ErrJSONUnexpectedChar = errors.New("unexpected character in JSON input")
-	ErrJSONNoContent      = errors.New("no meaningful content to parse")
+	ErrJSONSyntax          = errors.New("JSON syntax error")
+	ErrJSONUnexpectedChar  = errors.New("unexpected character in JSON input")
+	ErrJSONNoContent       = errors.New("no meaningful content to parse")
 	ErrJSONMultipleContent = errors.New("multiple JSON values")
 )
 
@@ -83,22 +83,18 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 	tokens := l.Tokens()
 	chunks, err := tokens.Split()
 	lastIndex := len(chunks) - 1
+	// fmt.Println(tokens)
+	// fmt.Println(chunks, err)
 
 	if err != nil {
 
-		if lastIndex > 0 && errors.Is(err, ErrIllegalToken) {
+		if lastIndex > 0 && (errors.Is(err, ErrIllegalToken) || errors.Is(err, ErrUnexpectedToken)) {
 			chunk := chunks[lastIndex]
 			illegalToken := tokens[chunk[0]]
 			return nil, WrapJSONUnexpectedCharError(illegalToken)
 		}
 
-		if lastIndex > 0 && errors.Is(err, ErrUnexpectedToken) {
-			chunk := chunks[lastIndex]
-			illegalToken := tokens[chunk[0]]
-			return nil, WrapJSONUnexpectedCharError(illegalToken)
-		}
-
-		return nil, err
+		// return nil, err
 	}
 
 	if len(chunks) == 0 {
@@ -136,10 +132,10 @@ func (p *Parser) parse() (JSON, error) {
 		return p.parseString()
 	case NUMBER:
 		return p.parseNumber()
-	// case LEFT_SQUARE_BRACE:
-		// return p.parseArray()
-	// case LEFT_CURLY_BRACE:
-	// 	return p.parseObject()
+	case LEFT_SQUARE_BRACE:
+		return p.parseArray()
+	case LEFT_CURLY_BRACE:
+		return p.parseObject()
 	case ILLEGAL:
 		return p.parseIllegal()
 	default:
@@ -178,52 +174,129 @@ func (p *Parser) parseNumber() (JSON, error) {
 	return newJSONNumber(p.curToken, p.nextToken), nil
 }
 
-// func (p *Parser) parseArray() (JSON, error) {
-// 	items := []JSON{}
-// 	p.nextToken()
+func (p *Parser) parseArray() (JSON, error) {
+	items := []JSON{}
+	p.nextToken()
 
-// 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
-// 		item, err := p.Parse()
-// 		if err != nil {
-// 			return nil, err
-// 		}
+	p.ignoreWhitespacesOrComments()
 
-// 		items = append(items, item)
+	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
+		item, err := p.parse()
+		if err != nil {
+			return nil, err
+		}
 
-// 		hasComma := p.expectCurToken(COMMA)
-// 		isClosingBracket := p.expectCurToken(RIGHT_SQUARE_BRACE)
-// 		isNextClosingBracket := p.expectPeekToken(RIGHT_SQUARE_BRACE)
+		items = append(items, item)
 
-// 		isTrailingComma := hasComma && isNextClosingBracket
-// 		isValidArrayEnd := isClosingBracket || isTrailingComma
+		p.ignoreWhitespacesOrComments()
 
-// 		if !p.l.config.AllowTrailingCommaArray && isTrailingComma {
-// 			return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 				ErrJSONSyntax,
-// 				p.curToken.Literal,
-// 				p.curToken.Line,
-// 				p.curToken.Column+1,
-// 			)
-// 		}
+		hasComma := p.expectCurToken(COMMA)
+		isClosingBracket := p.expectCurToken(RIGHT_SQUARE_BRACE)
+		isNextClosingBracket := p.expectPeekToken(RIGHT_SQUARE_BRACE, true)
 
-// 		if !isValidArrayEnd && !hasComma {
-// 			return nil, fmt.Errorf("%w: %q at line %d, column %d",
-// 				ErrJSONSyntax,
-// 				p.curToken.Literal,
-// 				p.curToken.Line,
-// 				p.curToken.Column+1,
-// 			)
-// 		}
+		isTrailingComma := hasComma && isNextClosingBracket
+		isValidArrayEnd := isClosingBracket || isTrailingComma
 
-// 		if isValidArrayEnd {
-// 			break
-// 		}
+		if !p.config.AllowTrailingCommaArray && isTrailingComma {
+			return nil, WrapJSONSyntaxError(p.curToken)
+		}
 
-// 		p.nextToken()
-// 	}
+		if !isValidArrayEnd && !hasComma {
+			return nil, WrapJSONSyntaxError(p.curToken)
+		}
 
-// 	return newJSONArray(items, p.nextToken), nil
-// }
+		if isValidArrayEnd {
+			if isTrailingComma {
+				p.nextToken()
+				p.ignoreWhitespacesOrComments()
+			}
+			break
+		}
+
+		p.nextToken()
+		p.ignoreWhitespacesOrComments()
+	}
+
+	return newJSONArray(items, p.nextToken), nil
+}
+
+func (p *Parser) parseObject() (JSON, error) {
+	properties := map[string]JSON{}
+	p.nextToken()
+
+	p.ignoreWhitespacesOrComments()
+
+	for !p.expectCurToken(RIGHT_CURLY_BRACE) {
+		keyToken := p.curToken
+		key, err := p.parse()
+		if err != nil {
+			return nil, err
+		}
+
+		// fmt.Println(key, err)
+
+		keyString, ok := key.(String)
+
+		if !ok {
+			return nil, WrapJSONSyntaxError(keyToken)
+		}
+
+		// fmt.Println(keyString, ok)
+
+		keyAsString, ok := (keyString.Value()).(string)
+
+		if !ok {
+			return nil, WrapJSONSyntaxError(keyToken)
+		}
+
+		p.ignoreWhitespacesOrComments()
+
+		hasColon := p.expectCurToken(COLON)
+
+		if !hasColon {
+			return nil, WrapJSONSyntaxError(p.curToken)
+		}
+
+		p.nextToken()
+
+		p.ignoreWhitespacesOrComments()
+
+		value, err := p.parse()
+		if err != nil {
+			return nil, err
+		}
+
+		properties[keyAsString] = value
+
+		hasComma := p.expectCurToken(COMMA)
+		isClosingBracket := p.expectCurToken(RIGHT_CURLY_BRACE)
+		isNextClosingBracket := p.expectPeekToken(RIGHT_CURLY_BRACE, true)
+
+		isTrailingComma := hasComma && isNextClosingBracket
+		isValidArrayEnd := isClosingBracket || isTrailingComma
+
+		if !p.config.AllowTrailingCommaObject && isTrailingComma {
+			return nil, WrapJSONSyntaxError(p.curToken)
+		}
+
+		if !isValidArrayEnd && !hasComma {
+			return nil, WrapJSONSyntaxError(p.curToken)
+		}
+
+		if isValidArrayEnd {
+			if isTrailingComma {
+				p.nextToken()
+				p.ignoreWhitespacesOrComments()
+			}
+			break
+		}
+
+		p.nextToken()
+		p.ignoreWhitespacesOrComments()
+	}
+
+	return newJSONObject(properties, p.nextToken), nil
+}
 
 // func (p *Parser) parseObject() (JSON, error) {
 // 	object := JSONObject{Properties: map[string]JSON{}}
@@ -311,12 +384,36 @@ func (p *Parser) expectCurToken(kind TokenKind) bool {
 	}
 }
 
-func (p *Parser) expectPeekToken(kind TokenKind) bool {
+func (p *Parser) expectPeekToken(kind TokenKind, ignoreWhitespaceOrComments bool) bool {
 	if p.peekToken.Kind == kind {
 		return true
-	} else {
+	}
+
+	if !ignoreWhitespaceOrComments {
 		return false
 	}
+
+	if p.peekToken.Kind != WHITESPACE && p.peekToken.Kind != COMMENT {
+		return false
+	}
+
+	peekPos := p.peekPos + 1
+
+	for peekPos < len(p.tokens) {
+		peekToken := p.tokens[peekPos]
+
+		if peekToken.Kind == kind {
+			return true
+		}
+
+		if peekToken.Kind != WHITESPACE && peekToken.Kind != COMMENT {
+			return false
+		}
+
+		peekPos++
+	}
+
+	return false
 }
 
 func (p *Parser) expectPrevToken(kind TokenKind) bool {
@@ -324,6 +421,12 @@ func (p *Parser) expectPrevToken(kind TokenKind) bool {
 		return true
 	} else {
 		return false
+	}
+}
+
+func (p *Parser) ignoreWhitespacesOrComments() {
+	for p.expectCurToken(WHITESPACE) || p.expectCurToken(COMMENT) {
+		p.nextToken()
 	}
 }
 

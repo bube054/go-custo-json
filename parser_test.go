@@ -134,42 +134,88 @@ func TestJSONParserNumber(t *testing.T) {
 
 func TestJSONParserArray(t *testing.T) {
 	var tests = []ParserTest{
-		// parse array
-		// {msg: "Parse empty array", input: []byte(`[[1,2,3,],[4,5,6,],]`), expectedNode: Array{Items: []JSON{}}, expectedErr: nil, cfg: NewConfig(WithAllowTrailingCommaArray(false))},
-		// {msg: "Parse no trailing comma array, with no trailing comma allowed", input: []byte(`[1,2,3]`), expectedNode: Array{Items: []JSON{
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 1, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 3, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 5, nil)},
-		// }}, expectedErr: nil},
-		// {msg: "Parse trailing comma array, with no trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: nil, expectedErr: ErrJSONSyntax},
-		// {msg: "Parse trailing comma array, with trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: Array{Items: []JSON{
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 1, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 3, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 5, nil)},
-		// }}, expectedErr: nil,  cfg: NewConfig(WithAllowTrailingCommaArray(true)),},
-		// {msg: "Parse array, with surrounding whitespace", input: []byte(`  [1,2,3]  `), expectedNode: Array{Items: []JSON{
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 3, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 5, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 7, nil)},
-		// }}, expectedErr: nil},
-		// {msg: "Parse array, with post line comment", input: []byte(`[1,2,3] // line comment`), expectedNode: Array{Items: []JSON{
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 1, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 3, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 5, nil)},
-		// }}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true)),},
-		// {msg: "Parse array, with post block comment", input: []byte(`[1,2,3] /* block comment */`), expectedNode: Array{Items: []JSON{
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 1, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 3, nil)},
-		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 5, nil)},
-		// }}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true)),},
-		// {msg: "Parse array of arrays", input: []byte(`[[1,2,3,],[1,2,3,],]`), expectedNode: Array{Items: []JSON{
-		// {msg: "Parse array of arrays", input: []byte(`[[1,2,3,],[4,5,6,]]`), expectedNode: Array{Items: []JSON{
-		// Array{Items: []JSON{
+		{msg: "Parse empty array", input: []byte("[]"), expectedNode: Array{Items: []JSON{}}, expectedErr: nil, cfg: NewConfig(WithAllowTrailingCommaArray(false))},
+		{msg: "Parse no trailing comma array, with no trailing comma allowed", input: []byte(`[1,2,3]`), expectedNode: Array{Items: []JSON{
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		}}, expectedErr: nil},
+		{msg: "Parse trailing comma array, with no trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: nil, expectedErr: ErrJSONSyntax},
+		{msg: "Parse trailing comma array, with trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: Array{Items: []JSON{
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		}}, expectedErr: nil, cfg: NewConfig(WithAllowTrailingCommaArray(true))},
+		{msg: "Parse array, with surrounding whitespace", input: []byte(`  [1,2,3]  `), expectedNode: Array{Items: []JSON{
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 4, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 6, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 8, nil)},
+		}}, expectedErr: nil},
+		{msg: "Parse array, with post line comment", input: []byte(`[1,2,3] // line comment`), expectedNode: Array{Items: []JSON{
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		}}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		{msg: "Parse array, with post block comment", input: []byte(`[1,2,3] /* block comment */`), expectedNode: Array{Items: []JSON{
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+			Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		}}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+		{msg: "Parse array of arrays", input: []byte(`[[1,2,3],[1,2,3]]`), expectedNode: Array{Items: []JSON{
+			Array{Items: []JSON{
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 3, nil)},
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 5, nil)},
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 7, nil)},
+			}},
+			Array{Items: []JSON{
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 11, nil)},
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 13, nil)},
+				Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 15, nil)},
+			}},
+		}}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+	}
+
+	RunJSONParserTests(t, tests)
+}
+
+func TestJSONParserObject(t *testing.T) {
+	var tests = []ParserTest{
+		{msg: "Parse empty object", input: []byte("{}"), expectedNode: Object{Properties: map[string]JSON{}}, expectedErr: nil, cfg: NewConfig(WithAllowTrailingCommaObject(false))},
+		{msg: "Parse no trailing comma object, with no trailing comma allowed", input: []byte(`{"key": "value"}`), expectedNode: Object{
+			Properties: map[string]JSON{"key": String{Token: NewToken(STRING, DOUBLE_QUOTED, []byte("value"), 1, 9, nil)},},
+		}, expectedErr: nil},
+		// {msg: "Parse trailing comma object, with no trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: nil, expectedErr: ErrJSONSyntax},
+		// {msg: "Parse trailing comma object, with trailing comma allowed", input: []byte(`[1,2,3,]`), expectedNode: Array{Items: []JSON{
 		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
 		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
 		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
-		// }},
-		// Array{Items: []JSON{}},
+		// }}, expectedErr: nil, cfg: NewConfig(WithAllowTrailingCommaObject(true))},
+		// {msg: "Parse object, with surrounding whitespace", input: []byte(`  [1,2,3]  `), expectedNode: Array{Items: []JSON{
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 4, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 6, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 8, nil)},
+		// }}, expectedErr: nil},
+		// {msg: "Parse object, with post line comment", input: []byte(`[1,2,3] // line comment`), expectedNode: Array{Items: []JSON{
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		// }}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse object, with post block comment", input: []byte(`[1,2,3] /* block comment */`), expectedNode: Array{Items: []JSON{
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 2, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 4, nil)},
+		// 	Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 6, nil)},
+		// }}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
+		// {msg: "Parse object of arrays", input: []byte(`[[1,2,3],[1,2,3]]`), expectedNode: Array{Items: []JSON{
+		// 	Array{Items: []JSON{
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 3, nil)},
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 5, nil)},
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 7, nil)},
+		// 	}},
+		// 	Array{Items: []JSON{
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("1"), 1, 11, nil)},
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("2"), 1, 13, nil)},
+		// 		Number{Token: NewToken(NUMBER, INTEGER, []byte("3"), 1, 15, nil)},
+		// 	}},
 		// }}, expectedErr: nil, cfg: NewConfig(WithAllowBlockComments(true))},
 	}
 

@@ -249,6 +249,12 @@ func (tks Tokens) Split() ([][2]int, error) {
 
 			for lc != rc {
 				if count >= len(tks) {
+					index := count - 1
+					streams = append(streams, [2]int{start, count - 1})
+					if index < len(tks) && tks[index].Kind == ILLEGAL {
+						return streams, ErrUnexpectedToken
+					}
+
 					return streams, ErrUnbalancedArrayBrackets
 				}
 				tok := tks[count]
@@ -277,6 +283,12 @@ func (tks Tokens) Split() ([][2]int, error) {
 
 			for lc != rc {
 				if count >= len(tks) {
+					index := count - 1
+					streams = append(streams, [2]int{start, count - 1})
+					if index < len(tks) && tks[index].Kind == ILLEGAL {
+						return streams, ErrUnexpectedToken
+					}
+
 					return streams, ErrUnbalancedObjectBrackets
 				}
 				tok := tks[count]
