@@ -2,7 +2,6 @@ package jsonvx
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -266,7 +265,6 @@ func BenchmarkJSONParserObject(b *testing.B) {
 	//
 	// json := []byte("[null, true]")
 	for i := 0; i < b.N; i++ {
-		t, err := p.Parse(json)
-		fmt.Println(t, err)
+		p.Parse(json)
 	}
 }
