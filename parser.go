@@ -12,39 +12,8 @@ package jsonvx
 import (
 	"errors"
 	"fmt"
+	"sync"
 )
-
-// SyntaxError: JSON.parse: unterminated string literal
-// SyntaxError: JSON.parse: bad control character in string literal
-// SyntaxError: JSON.parse: bad character in string literal
-// SyntaxError: JSON.parse: bad Unicode escape
-// SyntaxError: JSON.parse: bad escape character
-// SyntaxError: JSON.parse: unterminated string
-// SyntaxError: JSON.parse: no number after minus sign
-// SyntaxError: JSON.parse: unexpected non-digit
-// SyntaxError: JSON.parse: missing digits after decimal point
-// SyntaxError: JSON.parse: unterminated fractional number/
-// SyntaxError: JSON.parse: missing digits after exponent indicator
-// SyntaxError: JSON.parse: missing digits after exponent sign
-// SyntaxError: JSON.parse: exponent part is missing a number
-// SyntaxError: JSON.parse: unexpected end of data
-// SyntaxError: JSON.parse: unexpected keyword
-// SyntaxError: JSON.parse: unexpected character
-// SyntaxError: JSON.parse: end of data while reading object contents
-// SyntaxError: JSON.parse: expected property name or '}'
-// SyntaxError: JSON.parse: end of data when ',' or ']' was expected
-// SyntaxError: JSON.parse: expected ',' or ']' after array element
-// SyntaxError: JSON.parse: end of data when property name was expected
-// SyntaxError: JSON.parse: expected double-quoted property name
-// SyntaxError: JSON.parse: end of data after property name when ':' was expected
-// SyntaxError: JSON.parse: expected ':' after property name in object
-// SyntaxError: JSON.parse: end of data after property value in object
-// SyntaxError: JSON.parse: expected ',' or '}' after property value in object
-// SyntaxError: JSON.parse: expected ',' or '}' after property-value pair in object literal
-// SyntaxError: JSON.parse: property names must be double-quoted strings
-// SyntaxError: JSON.parse: expected property name or '}'
-// SyntaxError: JSON.parse: unexpected character
-// SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
 
 var (
 	ErrJSONSyntax          = errors.New("JSON syntax error")
@@ -52,6 +21,38 @@ var (
 	ErrJSONNoContent       = errors.New("no meaningful content to parse")
 	ErrJSONMultipleContent = errors.New("multiple JSON values")
 )
+
+var arrayPool = sync.Pool{
+	New: func() any {
+		return make([]JSON, 0, 8) // preallocate some capacity
+	},
+}
+
+func getArray() []JSON {
+	return arrayPool.Get().([]JSON)
+}
+
+func putArray(a []JSON) {
+	a = a[:0] // reset slice length
+	arrayPool.Put(&a)
+}
+
+var objectPool = sync.Pool{
+	New: func() any {
+		return make(map[string]JSON, 8)
+	},
+}
+
+func getObject() map[string]JSON {
+	return objectPool.Get().(map[string]JSON)
+}
+
+func putObject(m map[string]JSON) {
+	for k := range m {
+		delete(m, k)
+	}
+	objectPool.Put(&m)
+}
 
 type Parser struct {
 	tokens Tokens
@@ -175,7 +176,7 @@ func (p *Parser) parseNumber() (JSON, error) {
 }
 
 func (p *Parser) parseArray() (JSON, error) {
-	items := []JSON{}
+	items := getArray()
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
@@ -183,6 +184,7 @@ func (p *Parser) parseArray() (JSON, error) {
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
 		item, err := p.parse()
 		if err != nil {
+			putArray(items)
 			return nil, err
 		}
 
@@ -198,10 +200,12 @@ func (p *Parser) parseArray() (JSON, error) {
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
 		if !p.config.AllowTrailingCommaArray && isTrailingComma {
+			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
+			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
@@ -221,7 +225,7 @@ func (p *Parser) parseArray() (JSON, error) {
 }
 
 func (p *Parser) parseObject() (JSON, error) {
-	properties := map[string]JSON{}
+	properties := getObject()
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
@@ -230,22 +234,21 @@ func (p *Parser) parseObject() (JSON, error) {
 		keyToken := p.curToken
 		key, err := p.parse()
 		if err != nil {
+			putObject(properties)
 			return nil, err
 		}
-
-		// fmt.Println(key, err)
 
 		keyString, ok := key.(String)
 
 		if !ok {
+			putObject(properties)
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
-
-		// fmt.Println(keyString, ok)
 
 		keyAsString, ok := (keyString.Value()).(string)
 
 		if !ok {
+			putObject(properties)
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
@@ -266,6 +269,15 @@ func (p *Parser) parseObject() (JSON, error) {
 			return nil, err
 		}
 
+		p.ignoreWhitespacesOrComments()
+
+		valueString, ok := value.(String)
+
+		if ok && valueString.Token.Kind == STRING && valueString.Token.SubKind == IDENT {
+			putObject(properties)
+			return nil, WrapJSONSyntaxError(valueString.Token)
+		}
+
 		properties[keyAsString] = value
 
 		hasComma := p.expectCurToken(COMMA)
@@ -275,11 +287,22 @@ func (p *Parser) parseObject() (JSON, error) {
 		isTrailingComma := hasComma && isNextClosingBracket
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
+		// fmt.Println("hasComma:", hasComma)
+		// fmt.Println("isClosingBracket:", isClosingBracket)
+		// fmt.Println("isNextClosingBracket:", isNextClosingBracket)
+		// fmt.Println("isTrailingComma:", isTrailingComma)
+		// fmt.Println("isValidArrayEnd:", isValidArrayEnd)
+		// fmt.Println("prev Token", p.prevToken)
+		// fmt.Println("current Token", p.curToken)
+		// fmt.Println("peek Token", p.peekToken)
+
 		if !p.config.AllowTrailingCommaObject && isTrailingComma {
+			putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
+			putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
@@ -297,65 +320,6 @@ func (p *Parser) parseObject() (JSON, error) {
 
 	return newJSONObject(properties, p.nextToken), nil
 }
-
-// func (p *Parser) parseObject() (JSON, error) {
-// 	object := JSONObject{Properties: map[string]JSON{}}
-
-// 	p.nextToken()
-
-// 	for !p.expectCurToken(RIGHT_CURLY_BRACE) {
-// 		if p.expectCurToken(EOF) {
-// 			return object, errors.New("object syntax error")
-// 		}
-
-// 		if p.expectCurToken(ILLEGAL) {
-// 			return object, errors.New("syntax error")
-// 		}
-
-// 		key, err := p.Parse()
-
-// 		if err != nil {
-// 			return object, errors.New("illegal object key")
-// 		}
-
-// 		stringNode, ok := key.(JSONString)
-// 		// _, ok := key.(JSONString)
-
-// 		if !ok {
-// 			return object, errors.New("only object key string required")
-// 		}
-
-// 		p.nextToken()
-
-// 		if !p.expectCurToken(COLON) {
-// 			return object, errors.New("colon object required")
-// 		}
-
-// 		p.nextToken()
-
-// 		value, err := p.Parse()
-
-// 		if err != nil {
-// 			return object, errors.New("illegal object value")
-// 		}
-
-// 		object.Properties[stringNode.Literal()] = value
-
-// 		p.nextToken()
-
-// 		if !p.expectCurToken(COMMA) {
-// 			return object, errors.New("object key pair should end with comma")
-// 		}
-
-// 		p.nextToken()
-// 	}
-
-// 	for p.expectCurToken(RIGHT_CURLY_BRACE) {
-// 		p.nextToken()
-// 	}
-
-// 	return object, nil
-// }
 
 func (p *Parser) nextToken() {
 	p.prevToken = p.curToken
@@ -449,3 +413,35 @@ func WrapJSONMultipleContentError(token Token) error {
 		token.Column,
 	)
 }
+
+// SyntaxError: JSON.parse: unterminated string literal
+// SyntaxError: JSON.parse: bad control character in string literal
+// SyntaxError: JSON.parse: bad character in string literal
+// SyntaxError: JSON.parse: bad Unicode escape
+// SyntaxError: JSON.parse: bad escape character
+// SyntaxError: JSON.parse: unterminated string
+// SyntaxError: JSON.parse: no number after minus sign
+// SyntaxError: JSON.parse: unexpected non-digit
+// SyntaxError: JSON.parse: missing digits after decimal point
+// SyntaxError: JSON.parse: unterminated fractional number/
+// SyntaxError: JSON.parse: missing digits after exponent indicator
+// SyntaxError: JSON.parse: missing digits after exponent sign
+// SyntaxError: JSON.parse: exponent part is missing a number
+// SyntaxError: JSON.parse: unexpected end of data
+// SyntaxError: JSON.parse: unexpected keyword
+// SyntaxError: JSON.parse: unexpected character
+// SyntaxError: JSON.parse: end of data while reading object contents
+// SyntaxError: JSON.parse: expected property name or '}'
+// SyntaxError: JSON.parse: end of data when ',' or ']' was expected
+// SyntaxError: JSON.parse: expected ',' or ']' after array element
+// SyntaxError: JSON.parse: end of data when property name was expected
+// SyntaxError: JSON.parse: expected double-quoted property name
+// SyntaxError: JSON.parse: end of data after property name when ':' was expected
+// SyntaxError: JSON.parse: expected ':' after property name in object
+// SyntaxError: JSON.parse: end of data after property value in object
+// SyntaxError: JSON.parse: expected ',' or '}' after property value in object
+// SyntaxError: JSON.parse: expected ',' or '}' after property-value pair in object literal
+// SyntaxError: JSON.parse: property names must be double-quoted strings
+// SyntaxError: JSON.parse: expected property name or '}'
+// SyntaxError: JSON.parse: unexpected character
+// SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data

@@ -344,6 +344,16 @@ func (l *Lexer) Token() Token {
 				return NewToken(NUMBER, SCI_NOT, num, l.line, col, nil)
 			}
 
+			// 			isFlt := isFloat(num)
+
+			// if isFlt && (bytes.Contains(num, []byte("e")) || bytes.Contains(num, []byte("E"))) {
+			// 	return NewToken(NUMBER, SCI_NOT, num, l.line, col, nil)
+			// }
+
+			// if isFlt {
+			// 	return NewToken(NUMBER, FLOAT, num, l.line, col, nil)
+			// }
+
 			isHexDec := isHex(num)
 			if isHexDec && !l.config.AllowHexNumbers {
 				return NewToken(ILLEGAL, INVALID_HEX_NUMBER, l.input[pos:], l.line, col, nil)

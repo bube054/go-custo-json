@@ -250,6 +250,41 @@ func TestLexNumber(t *testing.T) {
 	RunLexerTests(t, tests)
 }
 
+
+func BenchmarkLexer(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		l := NewLexer([]byte(`
+{
+  "widget": {
+    "debug": "on",
+    "window": {
+      "title": "Sample Konfabulator Widget",
+      "name": "main_window",
+      "width": 500,
+      "height": 500
+    },
+    "image": {
+      "src": "Images/Sun.png",
+      "hOffset": 250,
+      "vOffset": 250,
+      "alignment": "center"
+    },
+    "text": {
+      "data": "Click Here",
+      "size": 36,
+      "style": "bold",
+      "vOffset": 100,
+      "alignment": "center",
+      "onMouseUp": "sun1.opacity = (sun1.opacity / 100) * 90;"
+    }
+  }
+}    
+`), nil)
+		toks := l.Tokens()
+		toks.Split()
+	}
+}
+
 // func BenchmarkLexerReadChar(b *testing.B) {
 // 	l := NewLexer([]byte("lexer"), NewConfig())
 // 	for i := 0; i < b.N; i++ {

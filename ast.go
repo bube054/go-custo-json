@@ -53,12 +53,6 @@ func newJSONBoolean(token Token, cb func()) Boolean {
 }
 
 func (j Boolean) String() string {
-	// return fmt.Sprintf(
-	// 	"Boolean{Literal: %s, Value: %v}",
-	// 	j.Literal(),
-	// 	j.Value(),
-	// )
-
 	if j.Token.Kind == TRUE {
 		return "\033[1mtrue\033[0m"
 	} else {
@@ -87,12 +81,6 @@ func newJSONString(token Token, cb func()) String {
 }
 
 func (j String) String() string {
-	// return fmt.Sprintf(
-	// 	"String{Literal: %s, Value: %v}",
-	// 	j.Literal(),
-	// 	j.Value(),
-	// )
-
 	return string(j.Token.Literal)
 }
 
@@ -117,11 +105,6 @@ func newJSONNumber(token Token, cb func()) Number {
 }
 
 func (j Number) String() string {
-	// return fmt.Sprintf(
-	// 	"Number{Literal: %s, Value: %v}",
-	// 	j.Literal(),
-	// 	j.Value(),
-	// )
 	return string(j.Token.Literal)
 }
 
@@ -145,23 +128,18 @@ func newJSONArray(items []JSON, cb func()) Array {
 	return Array{Items: items}
 }
 
-func (j Array) String() string {
+func (a Array) String() string {
 	var builder strings.Builder
 	builder.WriteString("[")
-	for _, item := range j.Items {
-		builder.WriteString(fmt.Sprintf("%v,", item))
+	for i, item := range a.Items {
+		if i == len(a.Items)-1 {
+			builder.WriteString(fmt.Sprintf("%v", item))
+		}else{
+			builder.WriteString(fmt.Sprintf("%v,", item))
+		}
 	}
 	builder.WriteString("]")
 	return builder.String()
-	// var builder strings.Builder
-	// builder.WriteString("Array{\n")
-	// builder.WriteString(fmt.Sprintf("  Literal: %q,\n", j.Literal()))
-	// builder.WriteString("  Items:\n")
-	// for i, item := range j.Items {
-	// 	builder.WriteString(fmt.Sprintf("    [%d]: %v\n", i, item))
-	// }
-	// builder.WriteString("}")
-	// return builder.String()
 }
 
 func (j Array) Literal() string {
@@ -184,13 +162,18 @@ func newJSONObject(properties map[string]JSON, cb func()) Object {
 	return Object{Properties: properties}
 }
 
-func (j Object) String() string {
+func (o Object) String() string {
 	var builder strings.Builder
-	builder.WriteString("Object{\n")
-	builder.WriteString(fmt.Sprintf("  Literal: %q,\n", j.Literal()))
-	builder.WriteString("  Properties:\n")
-	for key, value := range j.Properties {
-		builder.WriteString(fmt.Sprintf("    %q: %v\n", key, value))
+	builder.WriteString("{")
+	count := 1
+	length := len(o.Properties)
+	for key, value := range o.Properties {
+		if count == length{
+			builder.WriteString(fmt.Sprintf("%v: %v", key, value))
+		}else{
+			builder.WriteString(fmt.Sprintf("%v: %v,", key, value))
+		}
+		count++
 	}
 	builder.WriteString("}")
 	return builder.String()
