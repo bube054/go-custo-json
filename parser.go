@@ -92,10 +92,12 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 	l := NewLexer(input, p.config)
 
 	tokens := l.Tokens()
-	chunks, err := tokens.Split()
+	chunks, ma, mo, err := tokens.Split()
 	lastIndex := len(chunks) - 1
 	// fmt.Println(tokens)
 	// fmt.Println(chunks, err)
+	// fmt.Println("max array:", ma)
+	// fmt.Println("max object:", mo)
 
 	if err != nil {
 
@@ -126,6 +128,8 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 	p.peekToken = Token{Kind: EOF}
 	p.prevPos = -1
 	p.prevToken = Token{Kind: EOF}
+	p.arrayCap = ma
+	p.objectCap = mo
 
 	p.nextToken()
 	p.nextToken()
@@ -191,6 +195,10 @@ func (p *Parser) parseArray() (JSON, error) {
 
 	p.ignoreWhitespacesOrComments()
 
+	if cap(*items) < p.arrayCap {
+		*items = make([]JSON, 0, p.arrayCap)
+	}
+
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
 		item, err := p.parse()
 		if err != nil {
@@ -210,10 +218,12 @@ func (p *Parser) parseArray() (JSON, error) {
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
 		if !p.config.AllowTrailingCommaArray && isTrailingComma {
+			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
+			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
