@@ -7,15 +7,17 @@ import (
 
 type JSON interface {
 	String() string
-	Literal() string
-	Value() any
+	Query(string) any
+	// Literal() string
+	// Value() any
 }
 
+// ///////////////////////////
 type Null struct {
-	Token Token
+	Token *Token
 }
 
-func newJSONNull(token Token, cb func()) Null {
+func newJSONNull(token *Token, cb func()) Null {
 	if cb != nil {
 		cb()
 	}
@@ -23,28 +25,22 @@ func newJSONNull(token Token, cb func()) Null {
 	return Null{Token: token}
 }
 
-func (j Null) String() string {
-	// return fmt.Sprintf(
-	// 	"Null{Literal: %s, Value: %v}",
-	// 	j.Literal(),
-	// 	j.Value(),
-	// )
+func (n Null) String() string {
 	return "\033[1mnull\033[0m"
 }
 
-func (j Null) Literal() string {
-	return string(j.Token.Literal)
+func (n Null) Query(str string) any {
+	return n.Token
 }
 
-func (j Null) Value() any {
-	return j.Token.Value()
-}
+/////////////////////////////
 
+// ///////////////////////////
 type Boolean struct {
-	Token Token
+	Token *Token
 }
 
-func newJSONBoolean(token Token, cb func()) Boolean {
+func newJSONBoolean(token *Token, cb func()) Boolean {
 	if cb != nil {
 		cb()
 	}
@@ -52,27 +48,26 @@ func newJSONBoolean(token Token, cb func()) Boolean {
 	return Boolean{Token: token}
 }
 
-func (j Boolean) String() string {
-	if j.Token.Kind == TRUE {
+func (b Boolean) String() string {
+	if b.Token.SubKind == TRUE {
 		return "\033[1mtrue\033[0m"
 	} else {
 		return "\033[1mfalse\033[0m"
 	}
 }
 
-func (j Boolean) Literal() string {
-	return string(j.Token.Literal)
+func (b Boolean) Query(str string) any {
+	return b.Token
 }
 
-func (j Boolean) Value() any {
-	return j.Token.Value()
-}
+/////////////////////////////
 
+// ///////////////////////////
 type String struct {
-	Token Token
+	Token *Token
 }
 
-func newJSONString(token Token, cb func()) String {
+func newJSONString(token *Token, cb func()) String {
 	if cb != nil {
 		cb()
 	}
@@ -80,23 +75,22 @@ func newJSONString(token Token, cb func()) String {
 	return String{Token: token}
 }
 
-func (j String) String() string {
-	return string(j.Token.Literal)
+func (s String) String() string {
+	return (s.Token.Value()).(string)
 }
 
-func (j String) Literal() string {
-	return string(j.Token.Literal)
+func (s String) Query(str string) any {
+	return s.Token
 }
 
-func (j String) Value() any {
-	return j.Token.Value()
-}
+/////////////////////////////
 
+// ///////////////////////////
 type Number struct {
-	Token Token
+	Token *Token
 }
 
-func newJSONNumber(token Token, cb func()) Number {
+func newJSONNumber(token *Token, cb func()) Number {
 	if cb != nil {
 		cb()
 	}
@@ -104,18 +98,17 @@ func newJSONNumber(token Token, cb func()) Number {
 	return Number{Token: token}
 }
 
-func (j Number) String() string {
-	return string(j.Token.Literal)
+func (n Number) String() string {
+	return string((n.Token.Literal))
 }
 
-func (j Number) Literal() string {
-	return string(j.Token.Literal)
+func (b Number) Query(str string) any {
+	return b.Token
 }
 
-func (j Number) Value() any {
-	return j.Token.Value()
-}
+/////////////////////////////
 
+// ///////////////////////////
 type Array struct {
 	Items []JSON
 }
@@ -134,7 +127,7 @@ func (a Array) String() string {
 	for i, item := range a.Items {
 		if i == len(a.Items)-1 {
 			builder.WriteString(fmt.Sprintf("%v", item))
-		}else{
+		} else {
 			builder.WriteString(fmt.Sprintf("%v,", item))
 		}
 	}
@@ -142,19 +135,23 @@ func (a Array) String() string {
 	return builder.String()
 }
 
-func (j Array) Literal() string {
-	return ""
+func (a Array) Query(str string) any {
+	return a.Items
 }
 
-func (j Array) Value() any {
-	return j.Items
+/////////////////////////////
+
+// ///////////////////////////
+type KeyValue struct {
+	key   []byte
+	value JSON
 }
 
 type Object struct {
-	Properties map[string]JSON
+	Properties []KeyValue
 }
 
-func newJSONObject(properties map[string]JSON, cb func()) Object {
+func newJSONObject(properties []KeyValue, cb func()) Object {
 	if cb != nil {
 		cb()
 	}
@@ -165,24 +162,20 @@ func newJSONObject(properties map[string]JSON, cb func()) Object {
 func (o Object) String() string {
 	var builder strings.Builder
 	builder.WriteString("{")
-	count := 1
 	length := len(o.Properties)
-	for key, value := range o.Properties {
-		if count == length{
-			builder.WriteString(fmt.Sprintf("%v: %v", key, value))
-		}else{
-			builder.WriteString(fmt.Sprintf("%v: %v,", key, value))
+	for ind, kv := range o.Properties {
+		if ind == length-1 {
+			builder.WriteString(fmt.Sprintf("%s: %v", kv.key, kv.value))
+		} else {
+			builder.WriteString(fmt.Sprintf("%s: %v,", kv.key, kv.value))
 		}
-		count++
 	}
 	builder.WriteString("}")
 	return builder.String()
 }
 
-func (j Object) Literal() string {
-	return ""
+func (o Object) Query(str string) any {
+	return o.Properties
 }
 
-func (j Object) Value() any {
-	return j.Properties
-}
+/////////////////////////////

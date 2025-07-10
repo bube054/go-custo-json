@@ -2,8 +2,10 @@ package jsonvx
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type ParserTest struct {
@@ -17,14 +19,104 @@ type ParserTest struct {
 func RunJSONParserTests(t *testing.T, tests []ParserTest) {
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
+			start := time.Now()
+
 			parser := New(test.cfg)
 			node, err := parser.Parse(test.input)
+
+			elapsed := time.Since(start)
+			// fmt.Printf("parsing took %.4f seconds\n", elapsed.Seconds())
+			fmt.Printf("parsing took %s\n", elapsed)
 
 			if !reflect.DeepEqual(node, test.expectedNode) || !errors.Is(err, test.expectedErr) {
 				t.Errorf("got (%v, %v), expected (%v, %v)", node, err, test.expectedNode, test.expectedErr)
 			}
 		})
 	}
+}
+
+// please remove later
+func TestJSONParserXYZ(t *testing.T) {
+	var tests = []ParserTest{
+		// 		{msg: "Parse anything", input: []byte(`[
+		//   1,
+		//   2,
+		//   3,
+		//   [4, 5, 6, [7, 8, [9, 10], 11], 12],
+		//   13,
+		//   [14, [15, 16], 17],
+		//   18,
+		//   19,
+		//   [20, 21, [22, 23, [24, 25, 26], 27], 28],
+		//   29,
+		//   [30, [31, 32, [33, [34, 35], 36], 37], 38],
+		//   39,
+		//   40,
+		//   [41, 42, [43, 44, [45, 46], [47, [48, 49, [50, 51], 52], 53]], 54],
+		//   55,
+		//   56,
+		//   57,
+		//   [58, [59, 60, [61, 62, [63, [64, [65, 66], 67], 68], 69], 70]],
+		//   71,
+		//   [72, 73, [74, [75, 76], [77, [78, 79]]]],
+		//   80,
+		//   81,
+		//   [82, 83, 84, [85, [86, [87, [88, 89, [90]]]]]],
+		//   91,
+		//   92,
+		//   93,
+		//   94,
+		//   95,
+		//   [96, [97, [98, [99, 100]]]]
+		// ]`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowHexNumbers(true))},
+		// 		{msg: "Parse anything", input: []byte(`{
+		//   "name": "Example",
+		//   "age": 30,
+		//   "active": true,
+		//   "score": null,
+		//   "tags": ["go", "json", null, true, 123],
+		//   "profile": {
+		//     "id": "user_123",
+		//     "email": "user@example.com",
+		//     "preferences": {
+		//       "notifications": true,
+		//       "theme": "dark",
+		//       "languages": ["en", "fr", "es"]
+		//     }
+		//   },
+		//   "metrics": {
+		//     "visits": 12345,
+		//     "conversion": 0.023,
+		//     "history": [
+		//       {
+		//         "date": "2025-07-10",
+		//         "value": 42
+		//       },
+		//       {
+		//         "date": "2025-07-09",
+		//         "value": 37
+		//       }
+		//     ]
+		//   },
+		//   "nested": {
+		//     "a": {
+		//       "b": {
+		//         "c": {
+		//           "d": {
+		//             "e": {
+		//               "flag": false,
+		//               "data": [1, 2, {"x": "deep", "y": null}]
+		//             }
+		//           }
+		//         }
+		//       }
+		//     }
+		//   }
+		// }`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowHexNumbers(true))},
+		{msg: "Parse anything", input: []byte(mediumPayload), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowHexNumbers(true))},
+	}
+
+	RunJSONParserTests(t, tests)
 }
 
 // func TestJSONParserNothing(t *testing.T) {
@@ -249,21 +341,156 @@ func RunJSONParserTests(t *testing.T, tests []ParserTest) {
 // 	RunJSONParserTests(t, tests)
 // }
 
-func BenchmarkJSONParserObject(b *testing.B) {
+func BenchmarkJSONParserAny(b *testing.B) {
+	p := New(nil)
+	json := []byte(`[
+  1,
+  2,
+  3,
+  [4, 5, 6, [7, 8, [9, 10], 11], 12],
+  13,
+  [14, [15, 16], 17],
+  18,
+  19,
+  [20, 21, [22, 23, [24, 25, 26], 27], 28],
+  29,
+  [30, [31, 32, [33, [34, 35], 36], 37], 38],
+  39,
+  40,
+  [41, 42, [43, 44, [45, 46], [47, [48, 49, [50, 51], 52], 53]], 54],
+  55,
+  56,
+  57,
+  [58, [59, 60, [61, 62, [63, [64, [65, 66], 67], 68], 69], 70]],
+  71,
+  [72, 73, [74, [75, 76], [77, [78, 79]]]],
+  80,
+  81,
+  [82, 83, 84, [85, [86, [87, [88, 89, [90]]]]]],
+  91,
+  92,
+  93,
+  94,
+  95,
+  [96, [97, [98, [99, 100]]]]
+]`)
+	for i := 0; i < b.N; i++ {
+		p.Parse(json)
+	}
+}
+
+func BenchmarkJSONParserSmallPayload(b *testing.B) {
+	p := New(nil)
+	json := []byte(smallPayload)
+	for i := 0; i < b.N; i++ {
+		p.Parse(json)
+	}
+}
+
+func BenchmarkJSONParserMediumPayload(b *testing.B) {
+	p := New(nil)
+	json := []byte(mediumPayload)
+	for i := 0; i < b.N; i++ {
+		p.Parse(json)
+	}
+}
+
+func BenchmarkJSONParserLargePayload(b *testing.B) {
 	p := New(nil)
 	json := []byte(`{
-    "st": 1,
-    "sid": 486,
-    "tt": "active",
-    "gr": 0,
-    "uuid": "de305d54-75b4-431b-adb2-eb6b9e546014",
-    "ip": "127.0.0.1",
-    "ua": "user_agent",
-    "tz": -6,
-    "v": 1
+  "person": {
+    "id": "d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
+    "name": {
+      "fullName": "Leonid Bugaev",
+      "givenName": "Leonid",
+      "familyName": "Bugaev"
+    },
+    "email": "leonsbox@gmail.com",
+    "gender": "male",
+    "location": "Saint Petersburg, Saint Petersburg, RU",
+    "geo": {
+      "city": "Saint Petersburg",
+      "state": "Saint Petersburg",
+      "country": "Russia",
+      "lat": 59.9342802,
+      "lng": 30.3350986
+    },
+    "bio": "Senior engineer at Granify.com",
+    "site": "http://flickfaver.com",
+    "avatar": "https://d1ts43dypk8bqh.cloudfront.net/v1/avatars/d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
+    "employment": {
+      "name": "www.latera.ru",
+      "title": "Software Engineer",
+      "domain": "gmail.com"
+    },
+    "facebook": {
+      "handle": "leonid.bugaev"
+    },
+    "github": {
+      "handle": "buger",
+      "id": 14009,
+      "avatar": "https://avatars.githubusercontent.com/u/14009?v=3",
+      "company": "Granify",
+      "blog": "http://leonsbox.com",
+      "followers": 95,
+      "following": 10
+    },
+    "twitter": {
+      "handle": "flickfaver",
+      "id": 77004410,
+      "bio": null,
+      "followers": 2,
+      "following": 1,
+      "statuses": 5,
+      "favorites": 0,
+      "location": "",
+      "site": "http://flickfaver.com",
+      "avatar": null
+    },
+    "linkedin": {
+      "handle": "in/leonidbugaev"
+    },
+    "googleplus": {
+      "handle": null
+    },
+    "angellist": {
+      "handle": "leonid-bugaev",
+      "id": 61541,
+      "bio": "Senior engineer at Granify.com",
+      "blog": "http://buger.github.com",
+      "site": "http://buger.github.com",
+      "followers": 41,
+      "avatar": "https://d1qb2nb5cznatu.cloudfront.net/users/61541-medium_jpg?1405474390"
+    },
+    "klout": {
+      "handle": null,
+      "score": null
+    },
+    "foursquare": {
+      "handle": null
+    },
+    "aboutme": {
+      "handle": "leonid.bugaev",
+      "bio": null,
+      "avatar": null
+    },
+    "gravatar": {
+      "handle": "buger",
+      "urls": [
+
+      ],
+      "avatar": "http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510",
+      "avatars": [
+        {
+          "url": "http://1.gravatar.com/avatar/f7c8edd577d13b8930d5522f28123510",
+          "type": "thumbnail"
+        }
+      ]
+    },
+    "fuzzy": false
+  },
+  "company": null
 }`)
-	//
-	// json := []byte("[null, true]")
 	for i := 0; i < b.N; i++ {
 		p.Parse(json)
 	}

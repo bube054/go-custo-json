@@ -19,6 +19,9 @@ type TokenSubKind int
 const (
 	NONE TokenSubKind = iota // NONE represents the absence of a sub kind.
 
+	FALSE // FALSE represents a boolean false.
+	TRUE  // TRUE represents a boolean true.
+
 	SINGLE_QUOTED // SINGLE_QUOTED represents a single quoted string value.
 	DOUBLE_QUOTED // DOUBLE_QUOTED represents a double quoted string value.
 	IDENT         // IDENT represents an unquoted identifier.
@@ -57,6 +60,8 @@ const (
 func (t TokenSubKind) String() string {
 	m := map[TokenSubKind]string{
 		NONE:                   "NONE",
+		FALSE:                  "FALSE",
+		TRUE:                   "TRUE",
 		SINGLE_QUOTED:          "SINGLE_QUOTED",
 		DOUBLE_QUOTED:          "DOUBLE_QUOTED",
 		IDENT:                  "IDENT",
@@ -98,21 +103,20 @@ func (t TokenSubKind) String() string {
 type TokenKind int
 
 const (
-	EOF                TokenKind = iota // EOF indicates the end of input.
-	ILLEGAL                             // ILLEGAL indicates an unrecognized or invalid token.
-	WHITESPACE                          // WHITESPACE represents any space character.
-	COMMENT                             // COMMENT represents a comment
-	STRING                              // STRING represents a string literal.
-	NUMBER                              // NUMBER represents any numeric literal.
-	NULL                                // NULL represents a null value.
-	TRUE                                // TRUE represents a boolean true.
-	FALSE                               // FALSE represents a boolean false.
-	COMMA                               // COMMA represents a ',' separator.
-	COLON                               // COLON represents a ':' separator.
-	LEFT_SQUARE_BRACE                   // LEFT_SQUARE_BRACE represents '['.
-	RIGHT_SQUARE_BRACE                  // RIGHT_SQUARE_BRACE represents ']'.
-	LEFT_CURLY_BRACE                    // LEFT_CURLY_BRACE represents '{'.
-	RIGHT_CURLY_BRACE                   // RIGHT_CURLY_BRACE represents '}'.
+	EOF        TokenKind = iota // EOF indicates the end of input.
+	ILLEGAL                     // ILLEGAL indicates an unrecognized or invalid token.
+	WHITESPACE                  // WHITESPACE represents any space character.
+	COMMENT                     // COMMENT represents a comment
+	STRING                      // STRING represents a string literal.
+	NUMBER                      // NUMBER represents any numeric literal.
+	NULL                        // NULL represents a null value.
+	BOOLEAN
+	COMMA              // COMMA represents a ',' separator.
+	COLON              // COLON represents a ':' separator.
+	LEFT_SQUARE_BRACE  // LEFT_SQUARE_BRACE represents '['.
+	RIGHT_SQUARE_BRACE // RIGHT_SQUARE_BRACE represents ']'.
+	LEFT_CURLY_BRACE   // LEFT_CURLY_BRACE represents '{'.
+	RIGHT_CURLY_BRACE  // RIGHT_CURLY_BRACE represents '}'.
 )
 
 // String returns a string representation of the TokenKind.
@@ -125,14 +129,13 @@ func (t TokenKind) String() string {
 		4:  "STRING",
 		5:  "NUMBER",
 		6:  "NULL",
-		7:  "TRUE",
-		8:  "FALSE",
-		9:  "COMMA",
-		10: "COLON",
-		11: "LEFT_SQUARE_BRACE",
-		12: "RIGHT_SQUARE_BRACE",
-		13: "LEFT_CURLY_BRACE",
-		14: "RIGHT_CURLY_BRACE",
+		7:  "BOOLEAN",
+		8:  "COMMA",
+		9:  "COLON",
+		10: "LEFT_SQUARE_BRACE",
+		11: "RIGHT_SQUARE_BRACE",
+		12: "LEFT_CURLY_BRACE",
+		13: "RIGHT_CURLY_BRACE",
 	}
 
 	str := m[t]
@@ -180,10 +183,15 @@ func (t Token) Value() any {
 	switch t.Kind {
 	case NULL:
 		return nil
-	case FALSE:
-		return false
-	case TRUE:
-		return true
+	case BOOLEAN:
+		switch t.SubKind {
+		case FALSE:
+			return false
+		case TRUE:
+			return true
+		default:
+			return nil
+		}
 	case STRING:
 		switch t.SubKind {
 		case SINGLE_QUOTED, DOUBLE_QUOTED:
@@ -201,6 +209,8 @@ func (t Token) Value() any {
 			return floatValue(t.Literal)
 		case SCI_NOT:
 			return sciFicValue(t.Literal)
+		case HEX:
+			return intValue(t.Literal)
 		default:
 			return nil
 		}
@@ -231,7 +241,7 @@ func (tks Tokens) Split() ([][2]int, error) {
 	for count < len(tks) {
 		token := tks[count]
 		switch token.Kind {
-		case NULL, TRUE, FALSE, STRING, NUMBER:
+		case NULL, BOOLEAN, STRING, NUMBER:
 			streams = append(streams, [2]int{count, count})
 			count++
 		case COMMENT, WHITESPACE, EOF:
@@ -315,3 +325,135 @@ func (tks Tokens) Split() ([][2]int, error) {
 
 	return streams, nil
 }
+
+// func (tks Tokens) Split() ([][2]int, int, int, error) {
+// 	count := 0
+// 	streams := [][2]int{}
+// 	maxArrayLen := 0
+// 	maxMapLen := 0
+
+// 	for count < len(tks) {
+// 		token := tks[count]
+// 		switch token.Kind {
+// 		case NULL, BOOLEAN, STRING, NUMBER:
+// 			streams = append(streams, [2]int{count, count})
+// 			count++
+// 		case COMMENT, WHITESPACE, EOF:
+// 			count++
+// 		case LEFT_SQUARE_BRACE:
+// 			start := count
+// 			count++
+// 			lc := 1
+// 			rc := 0
+// 			elementCount := 0
+// 			insideValue := false
+
+// 			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
+// 				rc++
+// 				count++
+// 			}
+
+// 			for lc != rc {
+// 				if count >= len(tks) {
+// 					index := count - 1
+// 					streams = append(streams, [2]int{start, index})
+// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
+// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 					}
+// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedArrayBrackets
+// 				}
+
+// 				tok := tks[count]
+
+// 				if tok.Kind == LEFT_SQUARE_BRACE {
+// 					lc++
+// 				} else if tok.Kind == RIGHT_SQUARE_BRACE {
+// 					rc++
+// 				} else if tok.Kind == COMMA {
+// 					if insideValue {
+// 						elementCount++
+// 						insideValue = false
+// 					}
+// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
+// 					insideValue = true
+// 				}
+
+// 				count++
+// 			}
+
+// 			if insideValue {
+// 				elementCount++
+// 			}
+
+// 			if elementCount > maxArrayLen {
+// 				maxArrayLen = elementCount
+// 			}
+
+// 			streams = append(streams, [2]int{start, count - 1})
+// 		case LEFT_CURLY_BRACE:
+// 			start := count
+// 			count++
+// 			lc := 1
+// 			rc := 0
+// 			pairCount := 0
+// 			expectingKey := true
+// 			keySeen := false
+
+// 			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
+// 				rc++
+// 				count++
+// 			}
+
+// 			for lc != rc {
+// 				if count >= len(tks) {
+// 					index := count - 1
+// 					streams = append(streams, [2]int{start, index})
+// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
+// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 					}
+// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedObjectBrackets
+// 				}
+
+// 				tok := tks[count]
+
+// 				if tok.Kind == LEFT_CURLY_BRACE {
+// 					lc++
+// 				} else if tok.Kind == RIGHT_CURLY_BRACE {
+// 					rc++
+// 				} else if tok.Kind == COLON && keySeen {
+// 					expectingKey = false
+// 				} else if tok.Kind == COMMA {
+// 					if !expectingKey {
+// 						pairCount++
+// 						expectingKey = true
+// 						keySeen = false
+// 					}
+// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
+// 					if expectingKey {
+// 						keySeen = true
+// 					}
+// 				}
+
+// 				count++
+// 			}
+
+// 			if keySeen && !expectingKey {
+// 				pairCount++
+// 			}
+
+// 			if pairCount > maxMapLen {
+// 				maxMapLen = pairCount
+// 			}
+
+// 			streams = append(streams, [2]int{start, count - 1})
+// 		case ILLEGAL:
+// 			streams = append(streams, [2]int{count, count})
+// 			return streams, maxArrayLen, maxMapLen, ErrIllegalToken
+// 		default:
+// 			streams = append(streams, [2]int{count, count})
+// 			return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 		}
+// 	}
+
+// 	return streams, maxArrayLen, maxMapLen, nil
+// }

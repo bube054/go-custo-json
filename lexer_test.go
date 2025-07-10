@@ -185,7 +185,7 @@ func TestLexNull(t *testing.T) {
 
 func TestLexTrue(t *testing.T) {
 	var tests = []LexerTest{
-		{msg: "Lex valid true", input: []byte("true"), expected: []Token{NewToken(TRUE, NONE, []byte("true"), 1, 1, nil), NewToken(EOF, NONE, nil, 1, 5, nil)}, cfg: NewConfig()},
+		{msg: "Lex valid true", input: []byte("true"), expected: []Token{NewToken(BOOLEAN, TRUE, []byte("true"), 1, 1, nil), NewToken(EOF, NONE, nil, 1, 5, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid tRuE case-sensitive", input: []byte("tRuE"), expected: []Token{NewToken(ILLEGAL, INVALID_TRUE, []byte("tRuE"), 1, 1, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid t", input: []byte("t"), expected: []Token{NewToken(ILLEGAL, INVALID_TRUE, []byte("t"), 1, 1, nil)}, cfg: NewConfig()},
 	}
@@ -195,7 +195,7 @@ func TestLexTrue(t *testing.T) {
 
 func TestLexFalse(t *testing.T) {
 	var tests = []LexerTest{
-		{msg: "Lex valid false", input: []byte("false"), expected: []Token{NewToken(FALSE, NONE, []byte("false"), 1, 1, nil), NewToken(EOF, NONE, nil, 1, 6, nil)}, cfg: NewConfig()},
+		{msg: "Lex valid false", input: []byte("false"), expected: []Token{NewToken(BOOLEAN, FALSE, []byte("false"), 1, 1, nil), NewToken(EOF, NONE, nil, 1, 6, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid fAlSe case-sensitive", input: []byte("fAlSe"), expected: []Token{NewToken(ILLEGAL, INVALID_FALSE, []byte("fAlSe"), 1, 1, nil)}, cfg: NewConfig()},
 		{msg: "Lex invalid f", input: []byte("f"), expected: []Token{NewToken(ILLEGAL, INVALID_FALSE, []byte("f"), 1, 1, nil)}, cfg: NewConfig()},
 	}
