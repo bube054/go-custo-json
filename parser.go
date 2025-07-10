@@ -24,42 +24,35 @@ var (
 
 var arrayPool = sync.Pool{
 	New: func() any {
-		a := make([]JSON, 0, 8)
-		return &a
+		return make([]JSON, 0, 8) // preallocate some capacity
 	},
 }
 
 func getArray() []JSON {
-	return *arrayPool.Get().(*[]JSON) // get pointer, then dereference
+	return arrayPool.Get().([]JSON)
 }
 
 func putArray(a []JSON) {
 	a = a[:0] // reset slice length
-	arrayPool.Put(&a) // store pointer
+	arrayPool.Put(a)
 }
-
 
 var objectPool = sync.Pool{
 	New: func() any {
-		// return a pointer to the map
-		m := make(map[string]JSON, 8)
-		return &m
+		return make(map[string]JSON)
 	},
 }
 
 func getObject() map[string]JSON {
-	// retrieve pointer, then dereference
-	return *objectPool.Get().(*map[string]JSON)
+	return objectPool.Get().(map[string]JSON)
 }
 
 func putObject(m map[string]JSON) {
 	for k := range m {
 		delete(m, k)
 	}
-	// store a pointer to the map
-	objectPool.Put(&m)
+	objectPool.Put(m)
 }
-
 
 type Parser struct {
 	tokens Tokens
@@ -167,23 +160,23 @@ func (p *Parser) parseIllegal() (JSON, error) {
 // }
 
 func (p *Parser) parseNull() (JSON, error) {
-	return newJSONNull(&p.curToken, p.nextToken), nil
+	return newJSONNull(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseBoolean() (JSON, error) {
-	return newJSONBoolean(&p.curToken, p.nextToken), nil
+	return newJSONBoolean(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseString() (JSON, error) {
-	return newJSONString(&p.curToken, p.nextToken), nil
+	return newJSONString(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseNumber() (JSON, error) {
-	return newJSONNumber(&p.curToken, p.nextToken), nil
+	return newJSONNumber(p.curToken, p.nextToken), nil
 }
 
 func (p *Parser) parseArray() (JSON, error) {
-	items := getArray()
+	items := []JSON{}
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
@@ -191,7 +184,6 @@ func (p *Parser) parseArray() (JSON, error) {
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
 		item, err := p.parse()
 		if err != nil {
-			putArray(items)
 			return nil, err
 		}
 
@@ -207,12 +199,10 @@ func (p *Parser) parseArray() (JSON, error) {
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
 		if !p.config.AllowTrailingCommaArray && isTrailingComma {
-			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
-			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 

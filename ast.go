@@ -12,10 +12,10 @@ type JSON interface {
 }
 
 type Null struct {
-	Token *Token
+	Token Token
 }
 
-func newJSONNull(token *Token, cb func()) Null {
+func newJSONNull(token Token, cb func()) Null {
 	if cb != nil {
 		cb()
 	}
@@ -41,10 +41,10 @@ func (j Null) Value() any {
 }
 
 type Boolean struct {
-	Token *Token
+	Token Token
 }
 
-func newJSONBoolean(token *Token, cb func()) Boolean {
+func newJSONBoolean(token Token, cb func()) Boolean {
 	if cb != nil {
 		cb()
 	}
@@ -72,12 +72,12 @@ type String struct {
 	Token Token
 }
 
-func newJSONString(token *Token, cb func()) String {
+func newJSONString(token Token, cb func()) String {
 	if cb != nil {
 		cb()
 	}
 
-	return String{Token: *token}
+	return String{Token: token}
 }
 
 func (j String) String() string {
@@ -96,12 +96,12 @@ type Number struct {
 	Token Token
 }
 
-func newJSONNumber(token *Token, cb func()) Number {
+func newJSONNumber(token Token, cb func()) Number {
 	if cb != nil {
 		cb()
 	}
 
-	return Number{Token: *token}
+	return Number{Token: token}
 }
 
 func (j Number) String() string {
