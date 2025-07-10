@@ -10,9 +10,10 @@
 package jsonvx
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"sync"
+	"sort"
 )
 
 var (
@@ -22,45 +23,6 @@ var (
 	ErrJSONMultipleContent = errors.New("multiple JSON values")
 )
 
-var (
-	DefaultArrayCap  = 8
-	DefaultObjectCap = 8
-)
-
-var arrayPool = sync.Pool{
-	New: func() any {
-
-		array := make([]JSON, 0, DefaultArrayCap)
-		return &array
-	},
-}
-
-func getArray() *[]JSON {
-	return arrayPool.Get().(*[]JSON)
-}
-
-func putArray(a *[]JSON) {
-	*a = (*a)[:0] // reset slice length
-	arrayPool.Put(a)
-}
-
-var objectPool = sync.Pool{
-	New: func() any {
-		return make(map[string]JSON, DefaultObjectCap)
-	},
-}
-
-func getObject() map[string]JSON {
-	return objectPool.Get().(map[string]JSON)
-}
-
-func putObject(m map[string]JSON) {
-	for k := range m {
-		delete(m, k)
-	}
-	objectPool.Put(m)
-}
-
 type Parser struct {
 	tokens Tokens
 	config *Config
@@ -69,11 +31,6 @@ type Parser struct {
 	curPos    int
 	peekToken Token
 	peekPos   int
-	prevToken Token
-	prevPos   int
-
-	arrayCap  int
-	objectCap int
 }
 
 func New(config *Config) Parser {
@@ -92,12 +49,10 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 	l := NewLexer(input, p.config)
 
 	tokens := l.Tokens()
-	chunks, ma, mo, err := tokens.Split()
+	chunks, err := tokens.Split()
 	lastIndex := len(chunks) - 1
 	// fmt.Println(tokens)
 	// fmt.Println(chunks, err)
-	// fmt.Println("max array:", ma)
-	// fmt.Println("max object:", mo)
 
 	if err != nil {
 
@@ -126,10 +81,6 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 	p.curToken = Token{Kind: EOF}
 	p.peekPos = -1
 	p.peekToken = Token{Kind: EOF}
-	p.prevPos = -1
-	p.prevToken = Token{Kind: EOF}
-	p.arrayCap = ma
-	p.objectCap = mo
 
 	p.nextToken()
 	p.nextToken()
@@ -169,10 +120,6 @@ func (p *Parser) parseIllegal() (JSON, error) {
 	return nil, WrapJSONUnexpectedCharError(p.curToken)
 }
 
-// func (p *Parser) handleComment() (JSON, error) {
-// 	return newJSONNull(p.curToken, p.nextToken), nil
-// }
-
 func (p *Parser) parseNull() (JSON, error) {
 	return newJSONNull(&p.tokens[p.curPos], p.nextToken), nil
 }
@@ -190,23 +137,19 @@ func (p *Parser) parseNumber() (JSON, error) {
 }
 
 func (p *Parser) parseArray() (JSON, error) {
-	items := getArray()
+	items := []JSON{}
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
 
-	if cap(*items) < p.arrayCap {
-		*items = make([]JSON, 0, p.arrayCap)
-	}
-
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
 		item, err := p.parse()
 		if err != nil {
-			putArray(items)
+			// putArray(items)
 			return nil, err
 		}
 
-		*items = append(*items, item)
+		items = append(items, item)
 
 		p.ignoreWhitespacesOrComments()
 
@@ -218,12 +161,10 @@ func (p *Parser) parseArray() (JSON, error) {
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
 		if !p.config.AllowTrailingCommaArray && isTrailingComma {
-			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
-			putArray(items)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
@@ -239,12 +180,11 @@ func (p *Parser) parseArray() (JSON, error) {
 		p.ignoreWhitespacesOrComments()
 	}
 
-	putArray(items)
-	return newJSONArray(*items, p.nextToken), nil
+	return newJSONArray(items, p.nextToken), nil
 }
 
 func (p *Parser) parseObject() (JSON, error) {
-	properties := map[string]JSON{}
+	properties := []KeyValue{}
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
@@ -253,7 +193,7 @@ func (p *Parser) parseObject() (JSON, error) {
 		keyToken := p.curToken
 		jsonKey, err := p.parse()
 		if err != nil {
-			putObject(properties)
+			// putObject(properties)
 			return nil, err
 		}
 
@@ -264,7 +204,7 @@ func (p *Parser) parseObject() (JSON, error) {
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
-		// keyAsString, ok := (keyString.Value()).(string)
+		// fmt.Println("keyString", keyString)
 
 		if !ok {
 			// putObject(properties)
@@ -290,6 +230,7 @@ func (p *Parser) parseObject() (JSON, error) {
 
 		p.ignoreWhitespacesOrComments()
 
+		// fmt.Printf("%v", value)
 		valueString, ok := value.(String)
 
 		if ok && valueString.Token.Kind == STRING && valueString.Token.SubKind == IDENT {
@@ -297,7 +238,9 @@ func (p *Parser) parseObject() (JSON, error) {
 			return nil, WrapJSONSyntaxError(*valueString.Token)
 		}
 
-		properties[keyString.String()] = value
+		// fmt.Println("valueString", valueString)
+
+		properties = append(properties, KeyValue{key: keyString.Token.Literal, value: value})
 
 		hasComma := p.expectCurToken(COMMA)
 		isClosingBracket := p.expectCurToken(RIGHT_CURLY_BRACE)
@@ -337,17 +280,16 @@ func (p *Parser) parseObject() (JSON, error) {
 		p.ignoreWhitespacesOrComments()
 	}
 
+	sort.Slice(properties, func(i, j int) bool {
+		return bytes.Compare(properties[i].key, properties[j].key) < 0
+	})
+
 	return newJSONObject(properties, p.nextToken), nil
 }
 
 func (p *Parser) nextToken() {
-	p.prevToken = p.curToken
-	p.prevPos = p.curPos
-	// fmt.Println("prevToken", p.prevToken)
-
 	p.curToken = p.peekToken
 	p.curPos = p.peekPos
-	// fmt.Println("curToken", p.curToken)
 
 	if p.peekPos+1 >= len(p.tokens) {
 		p.peekToken = Token{Kind: EOF, SubKind: NONE}
@@ -355,7 +297,6 @@ func (p *Parser) nextToken() {
 	} else {
 		p.peekPos++
 		p.peekToken = p.tokens[p.peekPos]
-		// fmt.Println("peekToken", p.peekToken)
 	}
 }
 
@@ -399,14 +340,6 @@ func (p *Parser) expectPeekToken(kind TokenKind, ignoreWhitespaceOrComments bool
 	return false
 }
 
-func (p *Parser) expectPrevToken(kind TokenKind) bool {
-	if p.prevToken.Kind == kind {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (p *Parser) ignoreWhitespacesOrComments() {
 	for p.expectCurToken(WHITESPACE) || p.expectCurToken(COMMENT) {
 		p.nextToken()
@@ -432,6 +365,43 @@ func WrapJSONMultipleContentError(token Token) error {
 		token.Column,
 	)
 }
+
+// var (
+// 	DefaultArrayCap  = 8
+// 	DefaultObjectCap = 8
+// )
+
+// var arrayPool = sync.Pool{
+// 	New: func() any {
+// 		array := make([]JSON, 0, DefaultArrayCap)
+// 		return &array
+// 	},
+// }
+
+// func getArray() *[]JSON {
+// 	return arrayPool.Get().(*[]JSON)
+// }
+
+// func putArray(a *[]JSON) {
+// 	*a = (*a)[:0]
+// 	arrayPool.Put(a)
+// }
+
+// var objectPool = sync.Pool{
+// 	New: func() any {
+// 		object := make([]KeyValue, 0, DefaultObjectCap)
+// 		return object
+// 	},
+// }
+
+// func getObject() []KeyValue {
+// 	return objectPool.Get().([]KeyValue)
+// }
+
+// func putObject(m []KeyValue) {
+// 	m = (m)[:0]
+// 	objectPool.Put(&m)
+// }
 
 // SyntaxError: JSON.parse: unterminated string literal
 // SyntaxError: JSON.parse: bad control character in string literal

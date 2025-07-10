@@ -233,104 +233,10 @@ func (tks Tokens) String() string {
 	return fmt.Sprintf("\n[\n%s\n]\n", strings.Join(parts, ",\n"))
 }
 
-// func (tks Tokens) Split() ([][2]int, error) {
-// 	count := 0
-// 	streams := [][2]int{}
-// 	// fmt.Println(tks)
-
-// 	for count < len(tks) {
-// 		token := tks[count]
-// 		switch token.Kind {
-// 		case NULL, BOOLEAN, STRING, NUMBER:
-// 			streams = append(streams, [2]int{count, count})
-// 			count++
-// 		case COMMENT, WHITESPACE, EOF:
-// 			count++
-// 		case LEFT_SQUARE_BRACE:
-// 			start := count
-// 			count++
-// 			lc := 1
-// 			rc := 0
-
-// 			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
-// 				rc++
-// 				count++
-// 			}
-
-// 			for lc != rc {
-// 				if count >= len(tks) {
-// 					index := count - 1
-// 					streams = append(streams, [2]int{start, index})
-// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-// 						return streams, ErrUnexpectedToken
-// 					}
-
-// 					return streams, ErrUnbalancedArrayBrackets
-// 				}
-// 				tok := tks[count]
-
-// 				if tok.Kind == LEFT_SQUARE_BRACE {
-// 					lc++
-// 				}
-
-// 				if tok.Kind == RIGHT_SQUARE_BRACE {
-// 					rc++
-// 				}
-// 				count++
-// 			}
-
-// 			streams = append(streams, [2]int{start, count - 1})
-// 		case LEFT_CURLY_BRACE:
-// 			start := count
-// 			count++
-// 			lc := 1
-// 			rc := 0
-
-// 			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
-// 				rc++
-// 				count++
-// 			}
-
-// 			for lc != rc {
-// 				if count >= len(tks) {
-// 					index := count - 1
-// 					streams = append(streams, [2]int{start, index})
-// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-// 						return streams, ErrUnexpectedToken
-// 					}
-
-// 					return streams, ErrUnbalancedObjectBrackets
-// 				}
-// 				tok := tks[count]
-
-// 				if tok.Kind == LEFT_CURLY_BRACE {
-// 					lc++
-// 				}
-
-// 				if tok.Kind == RIGHT_CURLY_BRACE {
-// 					rc++
-// 				}
-// 				count++
-// 			}
-
-// 			streams = append(streams, [2]int{start, count - 1})
-// 		case ILLEGAL:
-// 			streams = append(streams, [2]int{count, count})
-// 			return streams, ErrIllegalToken
-// 		default:
-// 			streams = append(streams, [2]int{count, count})
-// 			return streams, ErrUnexpectedToken
-// 		}
-// 	}
-
-// 	return streams, nil
-// }
-
-func (tks Tokens) Split() ([][2]int, int, int, error) {
+func (tks Tokens) Split() ([][2]int, error) {
 	count := 0
 	streams := [][2]int{}
-	maxArrayLen := 0
-	maxMapLen := 0
+	// fmt.Println(tks)
 
 	for count < len(tks) {
 		token := tks[count]
@@ -345,8 +251,6 @@ func (tks Tokens) Split() ([][2]int, int, int, error) {
 			count++
 			lc := 1
 			rc := 0
-			elementCount := 0
-			insideValue := false
 
 			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
 				rc++
@@ -358,35 +262,21 @@ func (tks Tokens) Split() ([][2]int, int, int, error) {
 					index := count - 1
 					streams = append(streams, [2]int{start, index})
 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+						return streams, ErrUnexpectedToken
 					}
-					return streams, maxArrayLen, maxMapLen, ErrUnbalancedArrayBrackets
-				}
 
+					return streams, ErrUnbalancedArrayBrackets
+				}
 				tok := tks[count]
 
 				if tok.Kind == LEFT_SQUARE_BRACE {
 					lc++
-				} else if tok.Kind == RIGHT_SQUARE_BRACE {
-					rc++
-				} else if tok.Kind == COMMA {
-					if insideValue {
-						elementCount++
-						insideValue = false
-					}
-				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
-					insideValue = true
 				}
 
+				if tok.Kind == RIGHT_SQUARE_BRACE {
+					rc++
+				}
 				count++
-			}
-
-			if insideValue {
-				elementCount++
-			}
-
-			if elementCount > maxArrayLen {
-				maxArrayLen = elementCount
 			}
 
 			streams = append(streams, [2]int{start, count - 1})
@@ -395,9 +285,6 @@ func (tks Tokens) Split() ([][2]int, int, int, error) {
 			count++
 			lc := 1
 			rc := 0
-			pairCount := 0
-			expectingKey := true
-			keySeen := false
 
 			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
 				rc++
@@ -409,51 +296,164 @@ func (tks Tokens) Split() ([][2]int, int, int, error) {
 					index := count - 1
 					streams = append(streams, [2]int{start, index})
 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+						return streams, ErrUnexpectedToken
 					}
-					return streams, maxArrayLen, maxMapLen, ErrUnbalancedObjectBrackets
-				}
 
+					return streams, ErrUnbalancedObjectBrackets
+				}
 				tok := tks[count]
 
 				if tok.Kind == LEFT_CURLY_BRACE {
 					lc++
-				} else if tok.Kind == RIGHT_CURLY_BRACE {
-					rc++
-				} else if tok.Kind == COLON && keySeen {
-					expectingKey = false
-				} else if tok.Kind == COMMA {
-					if !expectingKey {
-						pairCount++
-						expectingKey = true
-						keySeen = false
-					}
-				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
-					if expectingKey {
-						keySeen = true
-					}
 				}
 
+				if tok.Kind == RIGHT_CURLY_BRACE {
+					rc++
+				}
 				count++
-			}
-
-			if keySeen && !expectingKey {
-				pairCount++
-			}
-
-			if pairCount > maxMapLen {
-				maxMapLen = pairCount
 			}
 
 			streams = append(streams, [2]int{start, count - 1})
 		case ILLEGAL:
 			streams = append(streams, [2]int{count, count})
-			return streams, maxArrayLen, maxMapLen, ErrIllegalToken
+			return streams, ErrIllegalToken
 		default:
 			streams = append(streams, [2]int{count, count})
-			return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+			return streams, ErrUnexpectedToken
 		}
 	}
 
-	return streams, maxArrayLen, maxMapLen, nil
+	return streams, nil
 }
+
+// func (tks Tokens) Split() ([][2]int, int, int, error) {
+// 	count := 0
+// 	streams := [][2]int{}
+// 	maxArrayLen := 0
+// 	maxMapLen := 0
+
+// 	for count < len(tks) {
+// 		token := tks[count]
+// 		switch token.Kind {
+// 		case NULL, BOOLEAN, STRING, NUMBER:
+// 			streams = append(streams, [2]int{count, count})
+// 			count++
+// 		case COMMENT, WHITESPACE, EOF:
+// 			count++
+// 		case LEFT_SQUARE_BRACE:
+// 			start := count
+// 			count++
+// 			lc := 1
+// 			rc := 0
+// 			elementCount := 0
+// 			insideValue := false
+
+// 			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
+// 				rc++
+// 				count++
+// 			}
+
+// 			for lc != rc {
+// 				if count >= len(tks) {
+// 					index := count - 1
+// 					streams = append(streams, [2]int{start, index})
+// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
+// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 					}
+// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedArrayBrackets
+// 				}
+
+// 				tok := tks[count]
+
+// 				if tok.Kind == LEFT_SQUARE_BRACE {
+// 					lc++
+// 				} else if tok.Kind == RIGHT_SQUARE_BRACE {
+// 					rc++
+// 				} else if tok.Kind == COMMA {
+// 					if insideValue {
+// 						elementCount++
+// 						insideValue = false
+// 					}
+// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
+// 					insideValue = true
+// 				}
+
+// 				count++
+// 			}
+
+// 			if insideValue {
+// 				elementCount++
+// 			}
+
+// 			if elementCount > maxArrayLen {
+// 				maxArrayLen = elementCount
+// 			}
+
+// 			streams = append(streams, [2]int{start, count - 1})
+// 		case LEFT_CURLY_BRACE:
+// 			start := count
+// 			count++
+// 			lc := 1
+// 			rc := 0
+// 			pairCount := 0
+// 			expectingKey := true
+// 			keySeen := false
+
+// 			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
+// 				rc++
+// 				count++
+// 			}
+
+// 			for lc != rc {
+// 				if count >= len(tks) {
+// 					index := count - 1
+// 					streams = append(streams, [2]int{start, index})
+// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
+// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 					}
+// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedObjectBrackets
+// 				}
+
+// 				tok := tks[count]
+
+// 				if tok.Kind == LEFT_CURLY_BRACE {
+// 					lc++
+// 				} else if tok.Kind == RIGHT_CURLY_BRACE {
+// 					rc++
+// 				} else if tok.Kind == COLON && keySeen {
+// 					expectingKey = false
+// 				} else if tok.Kind == COMMA {
+// 					if !expectingKey {
+// 						pairCount++
+// 						expectingKey = true
+// 						keySeen = false
+// 					}
+// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
+// 					if expectingKey {
+// 						keySeen = true
+// 					}
+// 				}
+
+// 				count++
+// 			}
+
+// 			if keySeen && !expectingKey {
+// 				pairCount++
+// 			}
+
+// 			if pairCount > maxMapLen {
+// 				maxMapLen = pairCount
+// 			}
+
+// 			streams = append(streams, [2]int{start, count - 1})
+// 		case ILLEGAL:
+// 			streams = append(streams, [2]int{count, count})
+// 			return streams, maxArrayLen, maxMapLen, ErrIllegalToken
+// 		default:
+// 			streams = append(streams, [2]int{count, count})
+// 			return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
+// 		}
+// 	}
+
+// 	return streams, maxArrayLen, maxMapLen, nil
+// }

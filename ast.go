@@ -142,11 +142,16 @@ func (a Array) Query(str string) any {
 /////////////////////////////
 
 // ///////////////////////////
-type Object struct {
-	Properties map[string]JSON
+type KeyValue struct {
+	key   []byte
+	value JSON
 }
 
-func newJSONObject(properties map[string]JSON, cb func()) Object {
+type Object struct {
+	Properties []KeyValue
+}
+
+func newJSONObject(properties []KeyValue, cb func()) Object {
 	if cb != nil {
 		cb()
 	}
@@ -157,15 +162,13 @@ func newJSONObject(properties map[string]JSON, cb func()) Object {
 func (o Object) String() string {
 	var builder strings.Builder
 	builder.WriteString("{")
-	count := 1
 	length := len(o.Properties)
-	for key, value := range o.Properties {
-		if count == length {
-			builder.WriteString(fmt.Sprintf("%v: %v", key, value))
+	for ind, kv := range o.Properties {
+		if ind == length-1 {
+			builder.WriteString(fmt.Sprintf("%s: %v", kv.key, kv.value))
 		} else {
-			builder.WriteString(fmt.Sprintf("%v: %v,", key, value))
+			builder.WriteString(fmt.Sprintf("%s: %v,", kv.key, kv.value))
 		}
-		count++
 	}
 	builder.WriteString("}")
 	return builder.String()
