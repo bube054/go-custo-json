@@ -239,6 +239,7 @@ func (p *Parser) parseArray() (JSON, error) {
 		p.ignoreWhitespacesOrComments()
 	}
 
+	putArray(items)
 	return newJSONArray(*items, p.nextToken), nil
 }
 
