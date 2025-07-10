@@ -30,7 +30,7 @@ func RunJSONParserTests(t *testing.T, tests []ParserTest) {
 // please remove later
 func TestJSONParserXYZ(t *testing.T) {
 	var tests = []ParserTest{
-		{msg: "Parse anything", input: []byte(smallPayload), expectedNode: nil, expectedErr: ErrJSONNoContent},
+		{msg: "Parse anything", input: []byte(`[1,2.45,0xdecaf,2e7,null,true,false]`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowHexNumbers(true))},
 	}
 
 	RunJSONParserTests(t, tests)
@@ -257,6 +257,14 @@ func TestJSONParserXYZ(t *testing.T) {
 
 // 	RunJSONParserTests(t, tests)
 // }
+
+func BenchmarkJSONParserAny(b *testing.B) {
+	p := New(nil)
+	json := []byte(`[1,2.45,0xdecaf,2e7,null,true,false]`)
+	for i := 0; i < b.N; i++ {
+		p.Parse(json)
+	}
+}
 
 func BenchmarkJSONParserSmallPayload(b *testing.B) {
 	p := New(nil)

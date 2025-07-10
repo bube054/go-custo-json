@@ -22,24 +22,31 @@ var (
 	ErrJSONMultipleContent = errors.New("multiple JSON values")
 )
 
+var (
+	DefaultArrayCap  = 8
+	DefaultObjectCap = 8
+)
+
 var arrayPool = sync.Pool{
 	New: func() any {
-		return make([]JSON, 0, 8) // preallocate some capacity
+
+		array := make([]JSON, 0, DefaultArrayCap)
+		return &array
 	},
 }
 
-func getArray() []JSON {
-	return arrayPool.Get().([]JSON)
+func getArray() *[]JSON {
+	return arrayPool.Get().(*[]JSON)
 }
 
-func putArray(a []JSON) {
-	a = a[:0] // reset slice length
+func putArray(a *[]JSON) {
+	*a = (*a)[:0] // reset slice length
 	arrayPool.Put(a)
 }
 
 var objectPool = sync.Pool{
 	New: func() any {
-		return make(map[string]JSON)
+		return make(map[string]JSON, DefaultObjectCap)
 	},
 }
 
@@ -64,6 +71,9 @@ type Parser struct {
 	peekPos   int
 	prevToken Token
 	prevPos   int
+
+	arrayCap  int
+	objectCap int
 }
 
 func New(config *Config) Parser {
@@ -127,7 +137,7 @@ func (p *Parser) parse() (JSON, error) {
 	switch p.curToken.Kind {
 	case NULL:
 		return p.parseNull()
-	case FALSE, TRUE:
+	case BOOLEAN:
 		return p.parseBoolean()
 	case STRING:
 		return p.parseString()
@@ -160,23 +170,23 @@ func (p *Parser) parseIllegal() (JSON, error) {
 // }
 
 func (p *Parser) parseNull() (JSON, error) {
-	return newJSONNull(p.curToken, p.nextToken), nil
+	return newJSONNull(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseBoolean() (JSON, error) {
-	return newJSONBoolean(p.curToken, p.nextToken), nil
+	return newJSONBoolean(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseString() (JSON, error) {
-	return newJSONString(p.curToken, p.nextToken), nil
+	return newJSONString(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseNumber() (JSON, error) {
-	return newJSONNumber(p.curToken, p.nextToken), nil
+	return newJSONNumber(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseArray() (JSON, error) {
-	items := []JSON{}
+	items := getArray()
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
@@ -184,10 +194,11 @@ func (p *Parser) parseArray() (JSON, error) {
 	for !p.expectCurToken(RIGHT_SQUARE_BRACE) {
 		item, err := p.parse()
 		if err != nil {
+			putArray(items)
 			return nil, err
 		}
 
-		items = append(items, item)
+		*items = append(*items, item)
 
 		p.ignoreWhitespacesOrComments()
 
@@ -218,34 +229,34 @@ func (p *Parser) parseArray() (JSON, error) {
 		p.ignoreWhitespacesOrComments()
 	}
 
-	return newJSONArray(items, p.nextToken), nil
+	return newJSONArray(*items, p.nextToken), nil
 }
 
 func (p *Parser) parseObject() (JSON, error) {
-	properties := getObject()
+	properties := map[string]JSON{}
 	p.nextToken()
 
 	p.ignoreWhitespacesOrComments()
 
 	for !p.expectCurToken(RIGHT_CURLY_BRACE) {
 		keyToken := p.curToken
-		key, err := p.parse()
+		jsonKey, err := p.parse()
 		if err != nil {
 			putObject(properties)
 			return nil, err
 		}
 
-		keyString, ok := key.(String)
+		keyString, ok := jsonKey.(String)
 
 		if !ok {
-			putObject(properties)
+			// putObject(properties)
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
-		keyAsString, ok := (keyString.Value()).(string)
+		// keyAsString, ok := (keyString.Value()).(string)
 
 		if !ok {
-			putObject(properties)
+			// putObject(properties)
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
@@ -271,11 +282,11 @@ func (p *Parser) parseObject() (JSON, error) {
 		valueString, ok := value.(String)
 
 		if ok && valueString.Token.Kind == STRING && valueString.Token.SubKind == IDENT {
-			putObject(properties)
-			return nil, WrapJSONSyntaxError(valueString.Token)
+			// putObject(properties)
+			return nil, WrapJSONSyntaxError(*valueString.Token)
 		}
 
-		properties[keyAsString] = value
+		properties[keyString.String()] = value
 
 		hasComma := p.expectCurToken(COMMA)
 		isClosingBracket := p.expectCurToken(RIGHT_CURLY_BRACE)
@@ -294,12 +305,12 @@ func (p *Parser) parseObject() (JSON, error) {
 		// fmt.Println("peek Token", p.peekToken)
 
 		if !p.config.AllowTrailingCommaObject && isTrailingComma {
-			putObject(properties)
+			// putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
-			putObject(properties)
+			// putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
@@ -442,3 +453,60 @@ func WrapJSONMultipleContentError(token Token) error {
 // SyntaxError: JSON.parse: expected property name or '}'
 // SyntaxError: JSON.parse: unexpected character
 // SyntaxError: JSON.parse: unexpected non-whitespace character after JSON data
+
+// ✅ Option 1: 123+4i or 123-4i
+// json
+// Copy
+// Edit
+// "3+4i"
+// "3-4i"
+// Similar to: Mathematical notation.
+
+// Pros: Familiar to humans; used in many languages (e.g., MATLAB, Python's str() for complex).
+
+// Cons: Needs parsing logic to extract real/imag parts.
+
+// ✅ Option 2: complex(3,4)
+// json
+// Copy
+// Edit
+// "complex(3,4)"
+// Similar to: Python's constructor syntax.
+
+// Pros: Explicit about structure; easy to parse.
+
+// Cons: Verbose; less “number-like”.
+
+// 🌀 Less conventional options:
+// Option 3: 3@4
+// json
+// Copy
+// Edit
+// "3@4"
+// Interpreted as: real@imag.
+
+// Pros: Short and parseable.
+
+// Cons: Not standard anywhere; might be confusing.
+
+// Option 4: 3+4j
+// json
+// Copy
+// Edit
+// "3+4j"
+// Used by: Python.
+
+// Pros: Already in use.
+
+// Cons: j instead of i might be less intuitive for non-engineers.
+
+// 🔥 My recommendation
+// If JSON followed existing number patterns and you wanted the cleanest textual form, it would likely look like:
+
+// json
+// Copy
+// Edit
+// "3+4i"   // for 3 + 4i
+// "5-2i"   // for 5 - 2i
+// "0+1i"   // for pure imaginary
+// "4+0i"   // for pure real (still formatted as complex)

@@ -134,7 +134,7 @@ func (l *Lexer) Token() Token {
 			l.readChar()
 			l.readChar()
 
-			return NewToken(TRUE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+			return NewToken(BOOLEAN, TRUE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		}
 
 		return NewToken(ILLEGAL, INVALID_TRUE, l.input[pos:], l.line, col, nil)
@@ -153,7 +153,7 @@ func (l *Lexer) Token() Token {
 			l.readChar()
 			l.readChar()
 
-			return NewToken(FALSE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+			return NewToken(BOOLEAN, FALSE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		}
 
 		return NewToken(ILLEGAL, INVALID_FALSE, l.input[pos:], l.line, col, nil)
