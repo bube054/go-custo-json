@@ -21,12 +21,12 @@ func RunJSONParserTests(t *testing.T, tests []ParserTest) {
 		t.Run(test.msg, func(t *testing.T) {
 			start := time.Now()
 
-			parser := New(test.cfg)
-			node, err := parser.Parse(test.input)
+			parser := New(test.input, test.cfg)
+			node, err := parser.Parse()
 
 			elapsed := time.Since(start)
-			// fmt.Printf("parsing took %.4f seconds\n", elapsed.Seconds())
-			fmt.Printf("parsing took %s\n", elapsed)
+			fmt.Printf("parsing took %.4f seconds\n", elapsed.Seconds())
+			// fmt.Printf("parsing took %s\n", elapsed)
 
 			if !reflect.DeepEqual(node, test.expectedNode) || !errors.Is(err, test.expectedErr) {
 				t.Errorf("got (%v, %v), expected (%v, %v)", node, err, test.expectedNode, test.expectedErr)
@@ -342,7 +342,6 @@ func TestJSONParserXYZ(t *testing.T) {
 // }
 
 func BenchmarkJSONParserAny(b *testing.B) {
-	p := New(nil)
 	json := []byte(`[
   1,
   2,
@@ -374,29 +373,29 @@ func BenchmarkJSONParserAny(b *testing.B) {
   95,
   [96, [97, [98, [99, 100]]]]
 ]`)
+	p := New(json, nil)
 	for i := 0; i < b.N; i++ {
-		p.Parse(json)
+		p.Parse()
 	}
 }
 
 func BenchmarkJSONParserSmallPayload(b *testing.B) {
-	p := New(nil)
 	json := []byte(smallPayload)
+	p := New(json, nil)
 	for i := 0; i < b.N; i++ {
-		p.Parse(json)
+		p.Parse()
 	}
 }
 
 func BenchmarkJSONParserMediumPayload(b *testing.B) {
-	p := New(nil)
 	json := []byte(mediumPayload)
+	p := New(json, nil)
 	for i := 0; i < b.N; i++ {
-		p.Parse(json)
+		p.Parse()
 	}
 }
 
 func BenchmarkJSONParserLargePayload(b *testing.B) {
-	p := New(nil)
 	json := []byte(`{
   "person": {
     "id": "d50887ca-a6ce-4e59-b89f-14f0b5d03b03",
@@ -491,7 +490,8 @@ func BenchmarkJSONParserLargePayload(b *testing.B) {
   },
   "company": null
 }`)
+	p := New(json, nil)
 	for i := 0; i < b.N; i++ {
-		p.Parse(json)
+		p.Parse()
 	}
 }

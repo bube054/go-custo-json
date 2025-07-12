@@ -99,24 +99,25 @@ func (t TokenSubKind) String() string {
 	return "UNKNOWN"
 }
 
-// TokenKind represents the primary kind of a token, used in lexical analysis.
+// TokenKind represents the kind of a token, used during both lexical analysis
+// and by tools that query parsed node structures.
 type TokenKind int
 
 const (
-	EOF        TokenKind = iota // EOF indicates the end of input.
-	ILLEGAL                     // ILLEGAL indicates an unrecognized or invalid token.
-	WHITESPACE                  // WHITESPACE represents any space character.
-	COMMENT                     // COMMENT represents a comment
-	STRING                      // STRING represents a string literal.
-	NUMBER                      // NUMBER represents any numeric literal.
-	NULL                        // NULL represents a null value.
-	BOOLEAN
-	COMMA              // COMMA represents a ',' separator.
-	COLON              // COLON represents a ':' separator.
-	LEFT_SQUARE_BRACE  // LEFT_SQUARE_BRACE represents '['.
-	RIGHT_SQUARE_BRACE // RIGHT_SQUARE_BRACE represents ']'.
-	LEFT_CURLY_BRACE   // LEFT_CURLY_BRACE represents '{'.
-	RIGHT_CURLY_BRACE  // RIGHT_CURLY_BRACE represents '}'.
+	EOF                TokenKind = iota // EOF indicates the end of input.
+	ILLEGAL                             // ILLEGAL indicates an unrecognized or invalid token.
+	WHITESPACE                          // WHITESPACE represents any space character.
+	COMMENT                             // COMMENT represents a comment
+	STRING                              // STRING represents a string literal.
+	NUMBER                              // NUMBER represents any numeric literal.
+	NULL                                // NULL represents a null value.
+	BOOLEAN                             // BOOLEAN represents a boolean value.
+	COMMA                               // COMMA represents a ',' separator.
+	COLON                               // COLON represents a ':' separator.
+	LEFT_SQUARE_BRACE                   // LEFT_SQUARE_BRACE represents '['.
+	RIGHT_SQUARE_BRACE                  // RIGHT_SQUARE_BRACE represents ']'.
+	LEFT_CURLY_BRACE                    // LEFT_CURLY_BRACE represents '{'.
+	RIGHT_CURLY_BRACE                   // RIGHT_CURLY_BRACE represents '}'.
 )
 
 // String returns a string representation of the TokenKind.
@@ -203,14 +204,12 @@ func (t Token) Value() any {
 		}
 	case NUMBER:
 		switch t.SubKind {
-		case INTEGER:
-			return intValue(t.Literal)
-		case FLOAT:
-			return floatValue(t.Literal)
-		case SCI_NOT:
-			return sciFicValue(t.Literal)
-		case HEX:
-			return intValue(t.Literal)
+		case INTEGER, HEX:
+			val, _ := ToInt(t.Literal)
+			return val
+		case FLOAT, SCI_NOT:
+			val, _ := ToFloat(t.Literal)
+			return val
 		default:
 			return nil
 		}

@@ -250,7 +250,6 @@ func TestLexNumber(t *testing.T) {
 	RunLexerTests(t, tests)
 }
 
-
 func BenchmarkLexer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		l := NewLexer([]byte(`

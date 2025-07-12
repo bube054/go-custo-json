@@ -278,20 +278,22 @@ func quoteValue(input []byte) string {
 	return string(before)
 }
 
-func intValue(input []byte) int64 {
-	num, _ := strconv.ParseInt(string(input), 10, 64)
+// func intValue(input []byte) int64 {
+// 	num, _ := strconv.ParseInt(string(input), 10, 64)
 
-	return num
+// 	return num
+// }
+
+// func floatValue(input []byte) float64 {
+// 	num, _ := strconv.ParseFloat(string(input), 64)
+
+// 	return num
+// }
+
+func ToInt(input []byte) (int64, error) {
+	return strconv.ParseInt(string(input), 10, 64)
 }
 
-func floatValue(input []byte) float64 {
-	num, _ := strconv.ParseFloat(string(input), 64)
-
-	return num
-}
-
-func sciFicValue(input []byte) float64 {
-	num, _ := strconv.ParseFloat(string(input), 64)
-
-	return num
+func ToFloat(input []byte) (float64, error) {
+	return strconv.ParseFloat(string(input), 64)
 }

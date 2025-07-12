@@ -1,4 +1,4 @@
-// Package jsonvx provides configurable options for parsing of JSON.
+// Package jsonvx provides configurable options for parsing and querying of JSON.
 //
 // It supports parsing a broad range of JSON syntax variants — from strict [ECMA-404-compliant JSON]
 // to more permissive formats like [JSON5]. The parser behavior can be customized via the Config struct,
@@ -24,8 +24,9 @@ var (
 )
 
 type Parser struct {
-	tokens Tokens
+	input  []byte
 	config *Config
+	tokens Tokens
 
 	curToken  Token
 	curPos    int
@@ -33,20 +34,21 @@ type Parser struct {
 	peekPos   int
 }
 
-func New(config *Config) Parser {
+func New(input []byte, config *Config) Parser {
 	if config == nil {
 		config = NewConfig()
 	}
 
 	p := Parser{
+		input:  input,
 		config: config,
 	}
 
 	return p
 }
 
-func (p *Parser) Parse(input []byte) (JSON, error) {
-	l := NewLexer(input, p.config)
+func (p *Parser) Parse() (JSON, error) {
+	l := NewLexer(p.input, p.config)
 
 	tokens := l.Tokens()
 	chunks, err := tokens.Split()
@@ -62,7 +64,6 @@ func (p *Parser) Parse(input []byte) (JSON, error) {
 			return nil, WrapJSONUnexpectedCharError(illegalToken)
 		}
 
-		// return nil, err
 	}
 
 	if len(chunks) == 0 {
@@ -121,19 +122,19 @@ func (p *Parser) parseIllegal() (JSON, error) {
 }
 
 func (p *Parser) parseNull() (JSON, error) {
-	return newJSONNull(&p.tokens[p.curPos], p.nextToken), nil
+	return newNull(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseBoolean() (JSON, error) {
-	return newJSONBoolean(&p.tokens[p.curPos], p.nextToken), nil
+	return newBoolean(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseString() (JSON, error) {
-	return newJSONString(&p.tokens[p.curPos], p.nextToken), nil
+	return newString(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseNumber() (JSON, error) {
-	return newJSONNumber(&p.tokens[p.curPos], p.nextToken), nil
+	return newNumber(&p.tokens[p.curPos], p.nextToken), nil
 }
 
 func (p *Parser) parseArray() (JSON, error) {
@@ -180,7 +181,7 @@ func (p *Parser) parseArray() (JSON, error) {
 		p.ignoreWhitespacesOrComments()
 	}
 
-	return newJSONArray(items, p.nextToken), nil
+	return newArray(items, p.nextToken), nil
 }
 
 func (p *Parser) parseObject() (JSON, error) {
@@ -284,7 +285,7 @@ func (p *Parser) parseObject() (JSON, error) {
 		return bytes.Compare(properties[i].key, properties[j].key) < 0
 	})
 
-	return newJSONObject(properties, p.nextToken), nil
+	return newObject(properties, p.nextToken), nil
 }
 
 func (p *Parser) nextToken() {
