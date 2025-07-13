@@ -194,21 +194,22 @@ func (p *Parser) parseObject() (JSON, error) {
 		keyToken := p.curToken
 		jsonKey, err := p.parse()
 		if err != nil {
-			// putObject(properties)
 			return nil, err
 		}
 
 		keyString, ok := jsonKey.(String)
 
 		if !ok {
-			// putObject(properties)
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
-		// fmt.Println("keyString", keyString)
-
 		if !ok {
-			// putObject(properties)
+			return nil, WrapJSONSyntaxError(keyToken)
+		}
+
+		key := keyString.Token.Literal
+
+		if len(key) < 2 {
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
@@ -231,17 +232,13 @@ func (p *Parser) parseObject() (JSON, error) {
 
 		p.ignoreWhitespacesOrComments()
 
-		// fmt.Printf("%v", value)
 		valueString, ok := value.(String)
 
 		if ok && valueString.Token.Kind == STRING && valueString.Token.SubKind == IDENT {
-			// putObject(properties)
 			return nil, WrapJSONSyntaxError(*valueString.Token)
 		}
 
-		// fmt.Println("valueString", valueString)
-
-		properties = append(properties, KeyValue{key: keyString.Token.Literal, value: value})
+		properties = append(properties, KeyValue{key: key[1 : len(key)-1], value: value})
 
 		hasComma := p.expectCurToken(COMMA)
 		isClosingBracket := p.expectCurToken(RIGHT_CURLY_BRACE)
@@ -250,22 +247,11 @@ func (p *Parser) parseObject() (JSON, error) {
 		isTrailingComma := hasComma && isNextClosingBracket
 		isValidArrayEnd := isClosingBracket || isTrailingComma
 
-		// fmt.Println("hasComma:", hasComma)
-		// fmt.Println("isClosingBracket:", isClosingBracket)
-		// fmt.Println("isNextClosingBracket:", isNextClosingBracket)
-		// fmt.Println("isTrailingComma:", isTrailingComma)
-		// fmt.Println("isValidArrayEnd:", isValidArrayEnd)
-		// fmt.Println("prev Token", p.prevToken)
-		// fmt.Println("current Token", p.curToken)
-		// fmt.Println("peek Token", p.peekToken)
-
 		if !p.config.AllowTrailingCommaObject && isTrailingComma {
-			// putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 
 		if !isValidArrayEnd && !hasComma {
-			// putObject(properties)
 			return nil, WrapJSONSyntaxError(p.curToken)
 		}
 

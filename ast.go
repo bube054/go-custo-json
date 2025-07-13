@@ -1,8 +1,11 @@
 package jsonvx
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +14,13 @@ var (
 	ErrNotNumber  = errors.New("value is not a JSON number")
 	ErrNotBoolean = errors.New("value is not a JSON boolean")
 	ErrNotNull    = errors.New("value is not null")
+
+	ErrInvalidQueryKey   = errors.New("invalid query key")
+	ErrExpectedIndex     = errors.New("invalid query key, expected integer index")
+	ErrIndexOutOfRange   = errors.New("index out of range")
+	ErrEmptyArray        = errors.New("array is empty")
+	ErrInvalidJSONType   = errors.New("invalid JSON type")
+	ErrQueryExceedsDepth = errors.New("query exceeds depth for scalar value")
 )
 
 type JSON interface {
@@ -207,8 +217,47 @@ func (a Array) String() string {
 	return builder.String()
 }
 
-func (a Array) Get(path string) (JSON, error) {
-	return nil, nil
+func (a Array) Len() int {
+	return len(a.Items)
+}
+
+func (a Array) QueryPath(paths ...string) (JSON, error) {
+	if len(paths) == 0 {
+		return nil, ErrInvalidQueryKey
+	}
+
+	indexStr := paths[0]
+	index, err := strconv.Atoi(indexStr)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q", ErrExpectedIndex, indexStr)
+	}
+
+	if a.Len() == 0 {
+		return nil, ErrEmptyArray
+	}
+
+	if index < 0 || index >= a.Len() {
+		return nil, fmt.Errorf("%w: %d", ErrIndexOutOfRange, index)
+	}
+
+	item := a.Items[index]
+
+	rest := paths[1:]
+
+	switch val := item.(type) {
+	case Null, Boolean, Number, String:
+		if len(rest) > 0 {
+			return nil, ErrQueryExceedsDepth
+		}
+
+		return val, nil
+	case Array:
+		return val.QueryPath(rest...)
+	case Object:
+		return val.QueryPath(rest...)
+	default:
+		return nil, ErrInvalidJSONType
+	}
 }
 
 func AsArray(j JSON) (*Array, bool) {
@@ -249,8 +298,42 @@ func (o Object) String() string {
 	return builder.String()
 }
 
-func (o Object) Get(path string) (JSON, error) {
-	return nil, nil
+func (o Object) Len() int {
+	return len(o.Properties)
+}
+
+func (o Object) QueryPath(paths ...string) (JSON, error) {
+	if len(paths) == 0 {
+		return nil, ErrInvalidQueryKey
+	}
+
+	keyStr := paths[0]
+	keyBytes := []byte(keyStr)
+
+	index := sort.Search(len(o.Properties), func(i int) bool {
+		return bytes.Compare(o.Properties[i].key, keyBytes) >= 0
+	})
+
+	if index >= o.Len() || !bytes.Equal(o.Properties[index].key, keyBytes) {
+		return nil, fmt.Errorf("key not found: %q", keyStr)
+	}
+
+	item := o.Properties[index]
+	rest := paths[1:]
+
+	switch val := item.value.(type) {
+	case Null, Boolean, Number, String:
+		if len(rest) > 0 {
+			return nil, ErrQueryExceedsDepth
+		}
+		return val, nil
+	case Array:
+		return val.QueryPath(rest...)
+	case Object:
+		return val.QueryPath(rest...)
+	default:
+		return nil, ErrInvalidJSONType
+	}
 }
 
 func AsObject(j JSON) (*Object, bool) {

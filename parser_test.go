@@ -119,37 +119,37 @@ func TestJSONParserXYZ(t *testing.T) {
 	RunJSONParserTests(t, tests)
 }
 
-// func TestJSONParserNothing(t *testing.T) {
-// 	var tests = []ParserTest{
-// 		{msg: "Parse nothing", input: []byte(``), expectedNode: nil, expectedErr: ErrJSONNoContent},
-// 	}
+func TestJSONParserNothing(t *testing.T) {
+	var tests = []ParserTest{
+		{msg: "Parse nothing", input: []byte(``), expectedNode: nil, expectedErr: ErrJSONNoContent},
+	}
 
-// 	RunJSONParserTests(t, tests)
-// }
+	RunJSONParserTests(t, tests)
+}
 
-// func TestJSONParserWhitespace(t *testing.T) {
-// 	var tests = []ParserTest{
-// 		{msg: "Parse whitespace", input: []byte(``), expectedNode: nil, expectedErr: ErrJSONNoContent},
-// 		{msg: "Parse multiple whitespace", input: []byte(` 	 `), expectedNode: nil, expectedErr: ErrJSONNoContent},
-// 	}
+func TestJSONParserWhitespace(t *testing.T) {
+	var tests = []ParserTest{
+		{msg: "Parse whitespace", input: []byte(``), expectedNode: nil, expectedErr: ErrJSONNoContent},
+		{msg: "Parse multiple whitespace", input: []byte(` 	 `), expectedNode: nil, expectedErr: ErrJSONNoContent},
+	}
 
-// 	RunJSONParserTests(t, tests)
-// }
+	RunJSONParserTests(t, tests)
+}
 
-// func TestJSONParserComment(t *testing.T) {
-// 	var tests = []ParserTest{
-// 		{msg: "Parse single line comment", input: []byte("// line comment"), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowLineComments(true))},
-// 		{msg: "Parse multiple line comments", input: []byte("// first comment\n// second comment"), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowLineComments(true))},
-// 		{msg: "Parse block comment", input: []byte(`/* block comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
-// 		{msg: "Parse multiple block comments", input: []byte(`/* first comment */ /* second comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
-// 		{msg: "Parse primitive after line comment", input: []byte("// comment\n null"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
-// 		{msg: "Parse primitive before line comment", input: []byte("null // comment"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
-// 		{msg: "Parse primitive before & after line comment", input: []byte("// comment\n null // comment \n"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
-// 		{msg: "Parse invalid multiple json values surrounded by comments", input: []byte("// comment\n null // comment \n null"), expectedNode: nil, expectedErr: ErrJSONMultipleContent, cfg: NewConfig(WithAllowLineComments(true))},
-// 	}
+func TestJSONParserComment(t *testing.T) {
+	var tests = []ParserTest{
+		// {msg: "Parse single line comment", input: []byte("// line comment"), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse multiple line comments", input: []byte("// first comment\n// second comment"), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse block comment", input: []byte(`/* block comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
+		// {msg: "Parse multiple block comments", input: []byte(`/* first comment */ /* second comment */`), expectedNode: nil, expectedErr: ErrJSONNoContent, cfg: NewConfig(WithAllowBlockComments(true))},
+		// {msg: "Parse primitive after line comment", input: []byte("// comment\n null"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse primitive before line comment", input: []byte("null // comment"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 1, 1, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse primitive before & after line comment", input: []byte("// comment\n null // comment \n"), expectedNode: Null{Token: NewToken(NULL, NONE, []byte("null"), 2, 2, nil)}, expectedErr: nil, cfg: NewConfig(WithAllowLineComments(true))},
+		// {msg: "Parse invalid multiple json values surrounded by comments", input: []byte("// comment\n null // comment \n null"), expectedNode: nil, expectedErr: ErrJSONMultipleContent, cfg: NewConfig(WithAllowLineComments(true))},
+	}
 
-// 	RunJSONParserTests(t, tests)
-// }
+	RunJSONParserTests(t, tests)
+}
 
 // func TestJSONParserNull(t *testing.T) {
 // 	var tests = []ParserTest{
