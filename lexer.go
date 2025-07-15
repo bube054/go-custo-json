@@ -7,13 +7,13 @@ import (
 
 // Lexer performs lexical analysis on a JSON-like input stream.
 // It breaks the raw input into a sequence of tokens according to the parsing rules
-// defined in the provided Config.
+// defined in the provided ParserConfig.
 //
 // The Lexer operates on raw byte slices for performance, and tracks position and line
 // information to support error reporting and debugging.
 type Lexer struct {
-	input  []byte  // input is the raw byte slice being tokenized.
-	config *Config // config holds the parsing options that control how the lexer interprets input.
+	input  []byte        // input is the raw byte slice being tokenized.
+	config *ParserConfig // config holds the parsing options that control how the lexer interprets input.
 
 	line       int // line tracks the current line number in the input (starting from 1).
 	column     int
@@ -28,7 +28,7 @@ type Lexer struct {
 //
 // It immediately reads the first character to initialize internal state, so the lexer is ready
 // for tokenization right after creation.
-func NewLexer(input []byte, cfg *Config) *Lexer {
+func NewLexer(input []byte, cfg *ParserConfig) *Lexer {
 	l := &Lexer{input: input, config: cfg, line: 1, column: 0}
 	l.readChar()
 	return l
@@ -46,7 +46,7 @@ func (l *Lexer) String() string {
 // Token returns the current token being parsed by the lexer.
 func (l *Lexer) Token() Token {
 	if l.config == nil {
-		l.config = NewConfig()
+		l.config = NewParserConfig()
 	}
 
 	pos := l.pos

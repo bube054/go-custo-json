@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Config defines the encoding and decoding behavior for the JSON parser.
+// ParserConfig defines the encoding and decoding behavior for the JSON parser.
 //
 // By default, all fields are false (strict mode). Enabling individual fields allows the parser
 // to accept features that are not allowed by the standard [ECMA-404] specification but may appear
@@ -13,7 +13,7 @@ import (
 //
 // [ECMA-404]: https://datatracker.ietf.org/doc/html/rfc7159
 // [JSON5]: https://json5.org/
-type Config struct {
+type ParserConfig struct {
 	AllowExtraWS bool // AllowExtraWS allows extra whitespace in places not normally permitted by strict JSON.
 
 	AllowHexNumbers       bool // AllowHexNumbers enables support for hexadecimal numeric literals (e.g., 0xFF).
@@ -35,10 +35,10 @@ type Config struct {
 	AllowBlockComments bool // AllowBlockComments enables the use of block comments (/* ... */).
 }
 
-// NewConfig creates a new Config instance, optionally applying one or more configuration options.
+// NewParserConfig creates a new ParserConfig instance, optionally applying one or more configuration options.
 // Options are applied in the order provided.
-func NewConfig(opts ...func(*Config)) *Config {
-	cfg := &Config{}
+func NewParserConfig(opts ...func(*ParserConfig)) *ParserConfig {
+	cfg := &ParserConfig{}
 
 	for _, o := range opts {
 		o(cfg)
@@ -47,112 +47,123 @@ func NewConfig(opts ...func(*Config)) *Config {
 	return cfg
 }
 
-// String returns a formatted string representing all configuration options in the Config.
+// String returns a formatted string representing all configuration options in the ParserConfig.
 // Each field is listed with its corresponding boolean value.
-func (c *Config) String() string {
+func (c *ParserConfig) String() string {
 	var b strings.Builder
-	b.WriteString("Config{\n")
-	b.WriteString(fmt.Sprintf("  AllowExtraWS: %v,\n", c.AllowExtraWS))
-	b.WriteString(fmt.Sprintf("  AllowHexNumbers: %v,\n", c.AllowHexNumbers))
-	b.WriteString(fmt.Sprintf("  AllowPointEdgeNumbers: %v,\n", c.AllowPointEdgeNumbers))
-	b.WriteString(fmt.Sprintf("  AllowInfinity: %v,\n", c.AllowInfinity))
-	b.WriteString(fmt.Sprintf("  AllowNaN: %v,\n", c.AllowNaN))
-	b.WriteString(fmt.Sprintf("  AllowLeadingPlus: %v,\n", c.AllowLeadingPlus))
-	b.WriteString(fmt.Sprintf("  AllowUnquoted: %v,\n", c.AllowUnquoted))
-	b.WriteString(fmt.Sprintf("  AllowSingleQuotes: %v,\n", c.AllowSingleQuotes))
-	b.WriteString(fmt.Sprintf("  AllowNewlineInStrings: %v,\n", c.AllowNewlineInStrings))
-	b.WriteString(fmt.Sprintf("  AllowOtherEscapeChars: %v,\n", c.AllowOtherEscapeChars))
-	b.WriteString(fmt.Sprintf("  AllowTrailingCommaArray: %v,\n", c.AllowTrailingCommaArray))
-	b.WriteString(fmt.Sprintf("  AllowTrailingCommaObject: %v,\n", c.AllowTrailingCommaObject))
-	b.WriteString(fmt.Sprintf("  AllowLineComments: %v,\n", c.AllowLineComments))
-	b.WriteString(fmt.Sprintf("  AllowBlockComments: %v,\n", c.AllowBlockComments))
+	b.WriteString("ParserConfig{\n")
+
+	configFields := []struct {
+		name  string
+		value bool
+	}{
+		{"AllowExtraWS", c.AllowExtraWS},
+		{"AllowHexNumbers", c.AllowHexNumbers},
+		{"AllowPointEdgeNumbers", c.AllowPointEdgeNumbers},
+		{"AllowInfinity", c.AllowInfinity},
+		{"AllowNaN", c.AllowNaN},
+		{"AllowLeadingPlus", c.AllowLeadingPlus},
+		{"AllowUnquoted", c.AllowUnquoted},
+		{"AllowSingleQuotes", c.AllowSingleQuotes},
+		{"AllowNewlineInStrings", c.AllowNewlineInStrings},
+		{"AllowOtherEscapeChars", c.AllowOtherEscapeChars},
+		{"AllowTrailingCommaArray", c.AllowTrailingCommaArray},
+		{"AllowTrailingCommaObject", c.AllowTrailingCommaObject},
+		{"AllowLineComments", c.AllowLineComments},
+		{"AllowBlockComments", c.AllowBlockComments},
+	}
+
+	for _, f := range configFields {
+		b.WriteString(fmt.Sprintf("  %s: %v,\n", f.name, f.value))
+	}
+
 	b.WriteString("}")
 	return b.String()
 }
 
 // WithAllowExtraWS is the functional option setters for the AllowExtraWS flag.
-func WithAllowExtraWS(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowExtraWS(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowExtraWS = allow
 	}
 }
 
 // Functional option setters for the AllowHexNumbers flag.
-func WithAllowHexNumbers(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowHexNumbers(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowHexNumbers = allow
 	}
 }
 
 // Functional option setters for the AllowHexNumbers flag.
-func WithAllowPointEdgeNumbers(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowPointEdgeNumbers(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowPointEdgeNumbers = allow
 	}
 }
 
-func WithAllowInfinity(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowInfinity(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowInfinity = allow
 	}
 }
 
-func WithAllowNaN(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowNaN(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowNaN = allow
 	}
 }
 
-func WithAllowLeadingPlus(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowLeadingPlus(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowLeadingPlus = allow
 	}
 }
 
-func WithAllowUnquoted(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowUnquoted(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowUnquoted = allow
 	}
 }
 
-func WithAllowSingleQuotes(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowSingleQuotes(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowSingleQuotes = allow
 	}
 }
 
-func WithAllowNewlineInStrings(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowNewlineInStrings(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowNewlineInStrings = allow
 	}
 }
 
-func WithAllowOtherEscapeChars(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowOtherEscapeChars(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowOtherEscapeChars = allow
 	}
 }
 
-func WithAllowTrailingCommaArray(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowTrailingCommaArray(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowTrailingCommaArray = allow
 	}
 }
 
-func WithAllowTrailingCommaObject(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowTrailingCommaObject(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowTrailingCommaObject = allow
 	}
 }
 
-func WithAllowLineComments(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowLineComments(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowLineComments = allow
 	}
 }
 
-func WithAllowBlockComments(allow bool) func(*Config) {
-	return func(c *Config) {
+func WithAllowBlockComments(allow bool) func(*ParserConfig) {
+	return func(c *ParserConfig) {
 		c.AllowBlockComments = allow
 	}
 }

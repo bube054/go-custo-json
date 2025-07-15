@@ -7,7 +7,7 @@ package jsonvx
 type SplitTokens struct {
 	msg            string
 	input          []byte
-	cfg            *Config
+	cfg            *ParserConfig
 	expectedChunks [][2]int
 	expectedErr    error
 }

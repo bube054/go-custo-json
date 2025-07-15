@@ -1,3 +1,44 @@
+// Package jsonvx provides a highly configurable parser, querier, and formatter for JSON-like data.
+//
+// jsonvx is designed to support both strict ECMA-404-compliant JSON and a wide range of non-standard,
+// relaxed variants — including JSON5 and other formats commonly found in real-world data. Its core
+// philosophy is flexibility: developers can fine-tune nearly every aspect of JSON parsing behavior
+// through the ParserConfig struct, enabling or disabling specific features to suit various parsing needs.
+//
+// Key features:
+//
+//   - Parsing:
+//
+//   - Strict mode (standards-compliant) and relaxed mode (e.g., unquoted keys, single-quoted strings)
+//
+//   - Support for hexadecimal numbers, `Infinity`, `NaN`, and leading plus signs
+//
+//   - Support for trailing commas, line/block comments, and non-standard escape sequences
+//
+//   - Configurable whitespace handling and edge-case number formats
+//
+//   - Querying:
+//
+//   - Traverse deeply nested arrays and objects using path-based access
+//
+//   - Query scalar values with meaningful error reporting
+//
+//   - Type-safe access to JSON values via Go interfaces
+//
+//   - Formatting:
+//
+//   - Render parsed JSON back into readable, syntax-highlighted string representations
+//
+//   - Useful for diagnostics, debugging, or building REPL-like tools
+//
+// jsonvx is especially useful when working with JSON data from dynamic sources,
+// legacy APIs, or configuration files that bend or break the formal rules of JSON.
+//
+// See the ParserConfig struct for all available parsing options.
+//
+// Specification references:
+//   - ECMA-404: https://datatracker.ietf.org/doc/html/rfc7159
+//   - JSON5: https://json5.org/
 package jsonvx
 
 import (
@@ -9,6 +50,7 @@ import (
 	"strings"
 )
 
+// Common errors for type assertion and query path resolution.
 var (
 	ErrNotString  = errors.New("value is not a JSON string")
 	ErrNotNumber  = errors.New("value is not a JSON number")
@@ -23,27 +65,30 @@ var (
 	ErrQueryExceedsDepth = errors.New("query exceeds depth for scalar value")
 )
 
+// JSON is a common interface implemented by all JSON types (Null, Boolean, etc.).
 type JSON interface {
 	String() string
 }
 
-// Null type starts here
+// Null represents a JSON null value.
 type Null struct {
 	Token *Token
 }
 
-func newNull(Token *Token, cb func()) Null {
+// newNull creates a new *Null value, optionally invoking a callback.
+func newNull(Token *Token, cb func()) *Null {
 	if cb != nil {
 		cb()
 	}
 
-	return Null{Token: Token}
+	return &Null{Token: Token}
 }
 
 func (n Null) String() string {
 	return "\033[1mnull\033[0m"
 }
 
+// Value returns nil if the token is valid, or an error otherwise.
 func (n Null) Value() (any, error) {
 	if n.Token == nil {
 		return nil, ErrNotNull
@@ -52,22 +97,24 @@ func (n Null) Value() (any, error) {
 	return nil, nil
 }
 
+// AsNull safely casts a JSON to a *Null.
 func AsNull(j JSON) (*Null, bool) {
-	null, ok := j.(Null)
-	return &null, ok
+	null, ok := j.(*Null)
+	return null, ok
 }
 
-// Boolean type starts here
+// Boolean represents a JSON boolean (true or false).
 type Boolean struct {
 	Token *Token
 }
 
-func newBoolean(Token *Token, cb func()) Boolean {
+// newBoolean creates a new *Boolean value, optionally invoking a callback
+func newBoolean(Token *Token, cb func()) *Boolean {
 	if cb != nil {
 		cb()
 	}
 
-	return Boolean{Token: Token}
+	return &Boolean{Token: Token}
 }
 
 func (b Boolean) String() string {
@@ -78,6 +125,7 @@ func (b Boolean) String() string {
 	}
 }
 
+// Value returns the boolean value or an error if the token is invalid.
 func (b Boolean) Value() (bool, error) {
 	if b.Token == nil {
 		return false, ErrNotBoolean
@@ -98,28 +146,31 @@ func (b Boolean) Value() (bool, error) {
 	return boolVal, nil
 }
 
+// AsBoolean safely casts a JSON to a *Boolean.
 func AsBoolean(j JSON) (*Boolean, bool) {
-	boolean, ok := j.(Boolean)
-	return &boolean, ok
+	boolean, ok := j.(*Boolean)
+	return boolean, ok
 }
 
-// String type starts here
+// String represents a JSON string.
 type String struct {
 	Token *Token
 }
 
-func newString(Token *Token, cb func()) String {
+// newString creates a new *String value, optionally invoking a callback
+func newString(Token *Token, cb func()) *String {
 	if cb != nil {
 		cb()
 	}
 
-	return String{Token: Token}
+	return &String{Token: Token}
 }
 
 func (s String) String() string {
 	return (s.Token.Value()).(string)
 }
 
+// Value returns the string or an error if invalid.
 func (s String) Value() (string, error) {
 	if s.Token == nil {
 		return "", ErrNotString
@@ -140,28 +191,31 @@ func (s String) Value() (string, error) {
 	return strVal, nil
 }
 
+// AsString safely casts a JSON to a *String.
 func AsString(j JSON) (*String, bool) {
-	str, ok := j.(String)
-	return &str, ok
+	str, ok := j.(*String)
+	return str, ok
 }
 
-// Number type starts here
+// Number represents a JSON number (integer, float, hex, etc.).
 type Number struct {
 	Token *Token
 }
 
-func newNumber(Token *Token, cb func()) Number {
+// newNumber creates a new *Number value, optionally invoking a callback
+func newNumber(Token *Token, cb func()) *Number {
 	if cb != nil {
 		cb()
 	}
 
-	return Number{Token: Token}
+	return &Number{Token: Token}
 }
 
 func (n Number) String() string {
 	return string((n.Token.Literal))
 }
 
+// Value attempts to parse the number as float64, depending on its subtype.
 func (n Number) Value() (float64, error) {
 	if n.Token == nil {
 		return 0, ErrNotNumber
@@ -185,22 +239,24 @@ func (n Number) Value() (float64, error) {
 	}
 }
 
+// AsNumber safely casts a JSON to a *Number.
 func AsNumber(j JSON) (*Number, bool) {
-	number, ok := j.(Number)
-	return &number, ok
+	number, ok := j.(*Number)
+	return number, ok
 }
 
-// Array type starts here
+// Array represents a JSON array.
 type Array struct {
 	Items []JSON
 }
 
-func newArray(items []JSON, cb func()) Array {
+// newArray creates a new *Array value, optionally invoking a callback
+func newArray(items []JSON, cb func()) *Array {
 	if cb != nil {
 		cb()
 	}
 
-	return Array{Items: items}
+	return &Array{Items: items}
 }
 
 func (a Array) String() string {
@@ -221,9 +277,10 @@ func (a Array) Len() int {
 	return len(a.Items)
 }
 
+// QueryPath retrieves a nested item using a slice of string indices.
 func (a Array) QueryPath(paths ...string) (JSON, error) {
 	if len(paths) == 0 {
-		return nil, ErrInvalidQueryKey
+		return a, nil
 	}
 
 	indexStr := paths[0]
@@ -245,42 +302,45 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.(type) {
-	case Null, Boolean, Number, String:
+	case *Null, *Boolean, *Number, *String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
 
 		return val, nil
-	case Array:
+	case *Array:
 		return val.QueryPath(rest...)
-	case Object:
+	case *Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
 	}
 }
 
+// AsArray safely casts a JSON to a *Array.
 func AsArray(j JSON) (*Array, bool) {
-	arr, ok := j.(Array)
-	return &arr, ok
+	arr, ok := j.(*Array)
+	return arr, ok
 }
 
-// Object type starts here
+// KeyValue represents a key-value pair in a JSON object.
 type KeyValue struct {
 	key   []byte
 	value JSON
 }
 
+// Object represents a JSON object.
 type Object struct {
 	Properties []KeyValue
 }
 
-func newObject(properties []KeyValue, cb func()) Object {
+// newObject creates a new *Object value, optionally invoking a callback
+func newObject(properties []KeyValue, cb func()) *Object {
 	if cb != nil {
 		cb()
 	}
 
-	return Object{Properties: properties}
+	return &Object{Properties: properties}
 }
 
 func (o Object) String() string {
@@ -302,9 +362,10 @@ func (o Object) Len() int {
 	return len(o.Properties)
 }
 
+// QueryPath retrieves a nested value via key-based path traversal.
 func (o Object) QueryPath(paths ...string) (JSON, error) {
 	if len(paths) == 0 {
-		return nil, ErrInvalidQueryKey
+		return o, nil
 	}
 
 	keyStr := paths[0]
@@ -322,21 +383,22 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.value.(type) {
-	case Null, Boolean, Number, String:
+	case *Null, *Boolean, *Number, *String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
 		return val, nil
-	case Array:
+	case *Array:
 		return val.QueryPath(rest...)
-	case Object:
+	case *Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
 	}
 }
 
+// AsObject safely casts a JSON to a *Object.
 func AsObject(j JSON) (*Object, bool) {
-	obj, ok := j.(Object)
-	return &obj, ok
+	obj, ok := j.(*Object)
+	return obj, ok
 }

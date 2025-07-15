@@ -1,12 +1,3 @@
-// Package jsonvx provides configurable options for parsing and querying of JSON.
-//
-// It supports parsing a broad range of JSON syntax variants — from strict [ECMA-404-compliant JSON]
-// to more permissive formats like [JSON5]. The parser behavior can be customized via the Config struct,
-// which exposes fine-grained toggles for non-standard features such as comments, trailing commas,
-// unquoted keys, single-quoted strings, and more.
-//
-// [ECMA-404-compliant JSON]: https://datatracker.ietf.org/doc/html/rfc7159
-// [JSON5]: https://json5.org/
 package jsonvx
 
 import (
@@ -25,7 +16,7 @@ var (
 
 type Parser struct {
 	input  []byte
-	config *Config
+	config *ParserConfig
 	tokens Tokens
 
 	curToken  Token
@@ -34,9 +25,9 @@ type Parser struct {
 	peekPos   int
 }
 
-func New(input []byte, config *Config) Parser {
+func New(input []byte, config *ParserConfig) Parser {
 	if config == nil {
-		config = NewConfig()
+		config = NewParserConfig()
 	}
 
 	p := Parser{
@@ -197,7 +188,7 @@ func (p *Parser) parseObject() (JSON, error) {
 			return nil, err
 		}
 
-		keyString, ok := jsonKey.(String)
+		keyString, ok := jsonKey.(*String)
 
 		if !ok {
 			return nil, WrapJSONSyntaxError(keyToken)
@@ -232,7 +223,7 @@ func (p *Parser) parseObject() (JSON, error) {
 
 		p.ignoreWhitespacesOrComments()
 
-		valueString, ok := value.(String)
+		valueString, ok := value.(*String)
 
 		if ok && valueString.Token.Kind == STRING && valueString.Token.SubKind == IDENT {
 			return nil, WrapJSONSyntaxError(*valueString.Token)
