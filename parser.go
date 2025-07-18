@@ -25,7 +25,7 @@ type Parser struct {
 	peekPos   int
 }
 
-func New(input []byte, config *ParserConfig) Parser {
+func NewParser(input []byte, config *ParserConfig) Parser {
 	if config == nil {
 		config = NewParserConfig()
 	}

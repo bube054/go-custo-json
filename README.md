@@ -38,105 +38,143 @@ $ go get -u github.com/bube054/jsonvx
 
 ## Quick Start
 
-Get searches json for the specified path. A path is in dot syntax, such as "name.last" or "age". When the value is found it's returned immediately.
+Get up and running with `jsonvx` in seconds. Just create a new parser, parse your JSON, and access fields using a simple path query system.
 
 ```go
 package main
 
-import "github.com/tidwall/gjson"
+import (
+	"fmt"
 
-const json = `{"name":{"first":"Janet","last":"Prichard"},"age":47}`
+	"github.com/bube054/jsonvx"
+)
 
 func main() {
-	value := gjson.Get(json, "name.last")
-	println(value.String())
-}
-```
-
-This will print:
-
-```
-Prichard
-```
-
-_There's also [GetBytes](#working-with-bytes) for working with JSON byte slices._
-
-## Path Syntax
-
-Below is a quick overview of the path syntax, for more complete information please
-check out [GJSON Syntax](SYNTAX.md).
-
-A path is a series of keys separated by a dot.
-A key may contain special wildcard characters '\*' and '?'.
-To access an array value use the index as the key.
-To get the number of elements in an array or to access a child path, use the '#' character.
-The dot and wildcard characters can be escaped with '\\'.
-
-```json
-{
-  "name": { "first": "Tom", "last": "Anderson" },
+	data := []byte(`{
+  "name": {"first": "Tom", "last": "Anderson"},
   "age": 37,
   "children": ["Sara", "Alex", "Jack"],
   "fav.movie": "Deer Hunter",
   "friends": [
-    {
-      "first": "Dale",
-      "last": "Murphy",
-      "age": 44,
-      "nets": ["ig", "fb", "tw"]
-    },
-    { "first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"] },
-    { "first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"] }
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
   ]
+}`)
+
+	parser := jsonvx.NewParser(data, nil)
+
+	node, err := parser.Parse()
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse JSON: %s", err))
+	}
+
+	rootObj, ok := jsonvx.AsObject(node)
+	if !ok {
+		panic(fmt.Sprintf("expected root node to be an object"))
+	}
+
+	ageNode, err := rootObj.QueryPath("age")
+	if err != nil {
+		panic(fmt.Sprintf("failed to query 'age' field: %s", err))
+	}
+
+	ageNum, ok := jsonvx.AsNumber(ageNode)
+	if !ok {
+		panic(fmt.Sprintf("expected 'age' to be a number"))
+	}
+
+	ageValue, err := ageNum.Value()
+	if err != nil {
+		panic(fmt.Sprintf("failed to convert 'age' to numeric value: %s", err))
+	}
+
+	fmt.Println(ageValue) // 37
 }
 ```
 
-```
-"name.last"          >> "Anderson"
-"age"                >> 37
-"children"           >> ["Sara","Alex","Jack"]
-"children.#"         >> 3
-"children.1"         >> "Alex"
-"child*.2"           >> "Jack"
-"c?ildren.0"         >> "Sara"
-"fav\.movie"         >> "Deer Hunter"
-"friends.#.first"    >> ["Dale","Roger","Jane"]
-"friends.1.last"     >> "Craig"
-```
+## Configuring The Parser
+You can configure the parser using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
-You can also query an array for the first match by using `#(...)`, or find all
-matches with `#(...)#`. Queries support the `==`, `!=`, `<`, `<=`, `>`, `>=`
-comparison operators and the simple pattern matching `%` (like) and `!%`
-(not like) operators.
+- `AllowExtraWS`: allows extra whitespace characters that are not normally permitted by strict JSON.
+  ```go
+  cfg := jsonvx.NewParserConfig(WithAllowExtraWS(true))
+  parser := jsonvx.NewParser([]byte{'\v', '\f', '\u0085', '\u0085'}, cfg)
+  ```
+- `AllowHexNumbers`: enables support for hexadecimal numeric literals (e.g., 0xFF).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowHexNumbers(true))
+	parser := jsonvx.NewParser([]byte("0x1F"), cfg)
+  ```
+- `AllowPointEdgeNumbers`: allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowPointEdgeNumbers(true))
+	parser := jsonvx.NewParser([]byte(".5"), cfg)
+  ```
+- `AllowInfinity`: enables the use of `Infinity` and `-Infinity` as number values.
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowInfinity(true))
+	parser := jsonvx.NewParser([]byte("Infinity"), cfg)
+  ```
+- `AllowNaN`: allows `NaN` (Not-a-Number) as a numeric value.
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowNaN(true))
+	parser := jsonvx.NewParser([]byte("NaN"), cfg)
+  ```
+- `AllowLeadingPlus`: permits a leading '+' in numbers (e.g., `+42`).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowLeadingPlus(true))
+	parser := jsonvx.NewParser([]byte("+99"), cfg)
+  ```
+- `AllowUnquoted`: enables parsing of unquoted object keys (e.g., `{foo: "bar"}`)
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowUnquoted(true))
+	parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg)
+  ```
+- `AllowSingleQuotes`: allows strings to be enclosed in single quotes (' ') in addition to double quotes.
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowSingleQuotes(true))
+	parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg)
+  ```
+- `AllowNewlineInStrings`: permits literal newlines inside string values without requiring escaping.
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowNewlineInStrings(true))
+	parser := jsonvx.NewParser([]byte(`"hello
+	world"`), cfg)
+  ```
+- `AllowOtherEscapeChars`: enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowOtherEscapeChars(true))
+	parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg)
+  ```
+- `AllowTrailingCommaArray`: permits a trailing comma in array literals (e.g., `[1, 2, ]`).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowTrailingCommaArray(true))
+	parser := jsonvx.NewParser([]byte(`[1, 2, 3, ]`), cfg)
+  ```
+- `AllowTrailingCommaObject`: permits a trailing comma in object literals (e.g., `{"a": 1,}`).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowTrailingCommaObject(true))
+	parser := jsonvx.NewParser([]byte(`{"a": 1,}`), cfg)
+  ```
+- `AllowLineComments`: enables the use of single-line comments (// ...).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowLineComments(true))
+	parser := jsonvx.NewParser([]byte(`// comment\n123`), cfg)
+  ```
+- `AllowBlockComments`: enables the use of block comments (/* ... */).
+  ```go
+	cfg := jsonvx.NewParserConfig(WithAllowBlockComments(true))
+	parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
+  ```
+- You can also combine multiple options to create a custom configuration.
+	```go
+	cfg := jsonvx.NewParserConfig(WithAllowLineComments(true), WithAllowBlockComments(true))
+	parser := jsonvx.NewParser([]byte(`// comment\n/* comment */ 123`), cfg)
+	```
 
-```
-friends.#(last=="Murphy").first    >> "Dale"
-friends.#(last=="Murphy")#.first   >> ["Dale","Jane"]
-friends.#(age>45)#.last            >> ["Craig","Murphy"]
-friends.#(first%"D*").last         >> "Murphy"
-friends.#(first!%"D*").last        >> "Craig"
-friends.#(nets.#(=="fb"))#.first   >> ["Dale","Roger"]
-```
+## Query Path Syntax
+...
 
-_Please note that prior to v1.3.0, queries used the `#[...]` brackets. This was
-changed in v1.3.0 as to avoid confusion with the new
-[multipath](SYNTAX.md#multipaths) syntax. For backwards compatibility,
-`#[...]` will continue to work until the next major release._
-
-<!-- goos: windows
-goarch: amd64
-pkg: github/bube054/jsonvx
-cpu: Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz
-BenchmarkJSONParserMediumPayload-8   	   10527	    116476 ns/op	  132784 B/op	     134 allocs/op
-PASS
-ok  	github/bube054/jsonvx	2.694s -->
-
-goos: windows
-goarch: amd64
-pkg: github/bube054/jsonvx
-cpu: Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz
-BenchmarkJSONParserMediumPayload-8   	   12444	     90460 ns/op	  123402 B/op	      34 allocs/op
-PASS
-ok  	github/bube054/jsonvx	2.703s
-
-BenchmarkJSONParserMediumPayload-8         15084             76120 ns/op          123400 B/op         34 allocs/op
+## License
+[MIT](https://github.com/bube054/jsonvx/blob/main/LICENSE)

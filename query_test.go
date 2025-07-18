@@ -6,10 +6,10 @@ import (
 )
 
 func TestJSONQuery(t *testing.T) {
-	b := []byte(`{
+	data := []byte(`{
   "name": {"first": "Tom", "last": "Anderson"},
-  "age":37,
-  "children": ["Sara","Alex","Jack"],
+  "age": 37,
+  "children": ["Sara", "Alex", "Jack"],
   "fav.movie": "Deer Hunter",
   "friends": [
     {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
@@ -18,24 +18,37 @@ func TestJSONQuery(t *testing.T) {
   ]
 }`)
 
-	p := New(b, nil)
-	json, err := p.Parse()
+	parser := NewParser(data, nil)
 
-	fmt.Println("json", json)
-
+	// parse the JSON
+	node, err := parser.Parse()
 	if err != nil {
-		t.Fatalf("got err %s:", err.Error())
+		t.Fatalf("failed to parse JSON: %s", err)
 	}
 
-	jsonObject, ok := json.(*Object)
-	// _ = ok
-
+	rootObj, ok := AsObject(node)
 	if !ok {
-		t.Fatalf("json is not array")
+		t.Fatalf("expected root node to be an object, but got: %s", err.Error())
 	}
 
-	// arrayItem, err := jsonObject.QueryPath("name", "last")
-	arrayItem, err := jsonObject.QueryPath(`fav.movie`)
+	// query the "age" field
+	ageNode, err := rootObj.QueryPath("age")
+	if err != nil {
+		t.Fatalf("failed to query 'age' field: %s", err.Error())
+	}
 
-	fmt.Println(arrayItem, err)
+	// assert that the age field is a number
+	ageNum, ok := AsNumber(ageNode)
+	if !ok {
+		t.Fatalf("expected 'age' to be a number, but got: %s", err.Error())
+	}
+
+	// get the value of the number
+	ageValue, err := ageNum.Value()
+	if err != nil {
+		// t.Fatalf("failed to convert 'age' to numeric value: %s", err.Error())
+	}
+
+	fmt.Println(ageValue) // 37
+
 }

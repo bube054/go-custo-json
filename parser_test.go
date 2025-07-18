@@ -21,7 +21,7 @@ func RunJSONParserTests(t *testing.T, tests []ParserTest) {
 		t.Run(test.msg, func(t *testing.T) {
 			start := time.Now()
 
-			parser := New(test.input, test.cfg)
+			parser := NewParser(test.input, test.cfg)
 			node, err := parser.Parse()
 
 			elapsed := time.Since(start)
@@ -373,7 +373,7 @@ func BenchmarkJSONParserAny(b *testing.B) {
   95,
   [96, [97, [98, [99, 100]]]]
 ]`)
-	p := New(json, nil)
+	p := NewParser(json, nil)
 	for i := 0; i < b.N; i++ {
 		p.Parse()
 	}
@@ -381,7 +381,7 @@ func BenchmarkJSONParserAny(b *testing.B) {
 
 func BenchmarkJSONParserSmallPayload(b *testing.B) {
 	json := []byte(smallPayload)
-	p := New(json, nil)
+	p := NewParser(json, nil)
 	for i := 0; i < b.N; i++ {
 		p.Parse()
 	}
@@ -389,7 +389,7 @@ func BenchmarkJSONParserSmallPayload(b *testing.B) {
 
 func BenchmarkJSONParserMediumPayload(b *testing.B) {
 	json := []byte(mediumPayload)
-	p := New(json, nil)
+	p := NewParser(json, nil)
 	for i := 0; i < b.N; i++ {
 		p.Parse()
 	}
@@ -490,7 +490,7 @@ func BenchmarkJSONParserLargePayload(b *testing.B) {
   },
   "company": null
 }`)
-	p := New(json, nil)
+	p := NewParser(json, nil)
 	for i := 0; i < b.N; i++ {
 		p.Parse()
 	}

@@ -302,7 +302,7 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.(type) {
-	case *Null, *Boolean, *Number, *String:
+	case *Null, Null, *Boolean, Boolean, *Number, Number, *String, String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
@@ -310,7 +310,11 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 		return val, nil
 	case *Array:
 		return val.QueryPath(rest...)
+	case Array:
+		return val.QueryPath(rest...)
 	case *Object:
+		return val.QueryPath(rest...)
+	case Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
@@ -383,14 +387,18 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.value.(type) {
-	case *Null, *Boolean, *Number, *String:
+	case *Null, Null, *Boolean, Boolean, *Number, Number, *String, String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
 		return val, nil
 	case *Array:
 		return val.QueryPath(rest...)
+	case Array:
+		return val.QueryPath(rest...)
 	case *Object:
+		return val.QueryPath(rest...)
+	case Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType

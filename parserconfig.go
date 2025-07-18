@@ -14,7 +14,7 @@ import (
 // [ECMA-404]: https://datatracker.ietf.org/doc/html/rfc7159
 // [JSON5]: https://json5.org/
 type ParserConfig struct {
-	AllowExtraWS bool // AllowExtraWS allows extra whitespace in places not normally permitted by strict JSON.
+	AllowExtraWS bool // AllowExtraWS allows extra whitespace characters that are not normally permitted by strict JSON.
 
 	AllowHexNumbers       bool // AllowHexNumbers enables support for hexadecimal numeric literals (e.g., 0xFF).
 	AllowPointEdgeNumbers bool // AllowPointEdgeNumbers allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
