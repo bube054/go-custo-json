@@ -321,6 +321,21 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 	}
 }
 
+// ArrayCallback defines the function signature for iterating over items in a JSON array.
+// - item: the current element
+// - index: the index of the element
+// - array: the array being iterated
+type ArrayCallback func(item JSON, index int, array JSON)
+
+// ForEach calls the given callback for each item in the array.
+// It provides the item, its index, and the array itself.
+func (a Array) ForEach(cb ArrayCallback) {
+	for i, item := range a.Items {
+		cb(item, i, a)
+	}
+}
+
+
 // AsArray safely casts a JSON to a *Array.
 func AsArray(j JSON) (*Array, bool) {
 	arr, ok := j.(*Array)
@@ -402,6 +417,20 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
+	}
+}
+
+// ObjectCallback defines the function signature for iterating over properties in a JSON object.
+// - key: the property's key as a byte slice
+// - value: the property's value
+// - object: the object being iterated
+type ObjectCallback func(key []byte, value JSON, object JSON)
+
+// ForEach calls the given callback for each key-value pair in the object.
+// It provides the key, value, and the object itself.
+func (o Object) ForEach(cb ObjectCallback) {
+	for _, prop := range o.Properties {
+		cb(prop.key, prop.value, o)
 	}
 }
 
