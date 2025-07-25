@@ -106,59 +106,6 @@ func (l *Lexer) Token() Token {
 		return NewToken(COLON, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		// Lexing colon ends here
 
-	// Lexing null starts here
-	case 'n':
-		second := l.peekBy(1) // expect 'u'
-		third := l.peekBy(2)  // expect 'l'
-		fourth := l.peekBy(3) // expect 'l'
-
-		if second == 'u' && third == 'l' && fourth == 'l' {
-			l.readChar()
-			l.readChar()
-			l.readChar()
-
-			return NewToken(NULL, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
-		}
-
-		return NewToken(ILLEGAL, INVALID_NULL, l.input[pos:], l.line, col, nil)
-		// Lexing null ends here
-
-	// Lexing true starts here
-	case 't':
-		second := l.peekBy(1) // expect 'r'
-		third := l.peekBy(2)  // expect 'u'
-		fourth := l.peekBy(3) // expect 'e'
-
-		if second == 'r' && third == 'u' && fourth == 'e' {
-			l.readChar()
-			l.readChar()
-			l.readChar()
-
-			return NewToken(BOOLEAN, TRUE, l.input[pos:l.readPos], l.line, col, l.readChar)
-		}
-
-		return NewToken(ILLEGAL, INVALID_TRUE, l.input[pos:], l.line, col, nil)
-		// Lexing true ends here
-
-	// Lexing false starts here
-	case 'f':
-		second := l.peekBy(1) // expect 'a'
-		third := l.peekBy(2)  // expect 'l'
-		fourth := l.peekBy(3) // expect 's'
-		fifth := l.peekBy(4)  // expect 'e'
-
-		if second == 'a' && third == 'l' && fourth == 's' && fifth == 'e' {
-			l.readChar()
-			l.readChar()
-			l.readChar()
-			l.readChar()
-
-			return NewToken(BOOLEAN, FALSE, l.input[pos:l.readPos], l.line, col, l.readChar)
-		}
-
-		return NewToken(ILLEGAL, INVALID_FALSE, l.input[pos:], l.line, col, nil)
-		// Lexing false ends here
-
 	// Lexing comment starts here
 	case '/': // forward slash
 
@@ -211,17 +158,23 @@ func (l *Lexer) Token() Token {
 			prevBy2 := l.prevBy(2)
 
 			if l.char == 0 {
-				break
+				return NewToken(ILLEGAL, INVALID_STRING, l.input[pos:], l.line, col, nil)
 			}
 
-			// End loop if not escaped, e.g., "\"" or '\''
-			if l.char == char && prev != '\\' {
-				break
-			}
+			// Case 1: Quote is not escaped (e.g., "\"" or '\'')
+			notEscaped := l.char == char && prev != '\\'
 
-			// End loop if properly escaped, e.g., "\\\"" or '\\\''
-			if l.char == char && prev == '\\' && prevBy2 == '\\' {
-				break
+			// Case 2: Quote is escaped but backslash itself is escaped (e.g., "\\\"" or '\\\”)
+			escapedEscape := l.char == char && prev == '\\' && prevBy2 == '\\'
+
+			if notEscaped || escapedEscape {
+				if char == '\'' {
+					return NewToken(STRING, SINGLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
+				}
+
+				if char == '"' {
+					return NewToken(STRING, DOUBLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
+				}
 			}
 
 			// Handle escape sequences
@@ -259,26 +212,66 @@ func (l *Lexer) Token() Token {
 
 			l.readChar()
 		}
-
-		if l.char == 0 {
-			return NewToken(ILLEGAL, INVALID_STRING, l.input[pos:], l.line, col, nil)
-		}
-
-		if char == '\'' {
-			return NewToken(STRING, SINGLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
-		}
-
-		if char == '"' {
-			return NewToken(STRING, DOUBLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
-		}
-
-		// THIS LINE WILL NEVER EXECUTE, JUST TO SATISFY THE COMPILER
-		return NewToken(ILLEGAL, INVALID_STRING, l.input[pos:], l.line, col, nil)
-		// Lexing string ends here
+	// Lexing string ends here
 
 	case 0:
 		return NewToken(EOF, NONE, nil, l.line, col, nil)
+
 	default:
+
+		switch char {
+
+		// Lexing null starts here
+		case 'n':
+			second := l.peekBy(1) // expect 'u'
+			third := l.peekBy(2)  // expect 'l'
+			fourth := l.peekBy(3) // expect 'l'
+
+			if second == 'u' && third == 'l' && fourth == 'l' {
+				l.readChar()
+				l.readChar()
+				l.readChar()
+
+				return NewToken(NULL, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+			}
+
+			// Lexing null ends here
+
+		// Lexing true starts here
+		case 't':
+			second := l.peekBy(1) // expect 'r'
+			third := l.peekBy(2)  // expect 'u'
+			fourth := l.peekBy(3) // expect 'e'
+
+			if second == 'r' && third == 'u' && fourth == 'e' {
+				l.readChar()
+				l.readChar()
+				l.readChar()
+
+				return NewToken(BOOLEAN, TRUE, l.input[pos:l.readPos], l.line, col, l.readChar)
+			}
+
+			// Lexing true ends here
+
+		// Lexing false starts here
+		case 'f':
+
+			second := l.peekBy(1) // expect 'a'
+			third := l.peekBy(2)  // expect 'l'
+			fourth := l.peekBy(3) // expect 's'
+			fifth := l.peekBy(4)  // expect 'e'
+
+			if second == 'a' && third == 'l' && fourth == 's' && fifth == 'e' {
+				l.readChar()
+				l.readChar()
+				l.readChar()
+				l.readChar()
+
+				return NewToken(BOOLEAN, FALSE, l.input[pos:l.readPos], l.line, col, l.readChar)
+			}
+
+			// Lexing false ends here
+		}
 
 		// Lexing number starts here
 		count := 0

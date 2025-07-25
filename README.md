@@ -1,5 +1,5 @@
 <div align="center">
-    <p style="font-size: 50px">JSONVX</p>
+    <p style="font-size: 150px">JSONVX</p>
   </a>
 </div>
 
@@ -94,87 +94,128 @@ func main() {
 ```
 
 ## Configuring The Parser
+
 You can configure the parser using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
 - `AllowExtraWS`: allows extra whitespace characters that are not normally permitted by strict JSON.
   ```go
-  cfg := jsonvx.NewParserConfig(WithAllowExtraWS(true))
-  parser := jsonvx.NewParser([]byte{'\v', '\f', '\u0085', '\u0085'}, cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowExtraWS(true))
+  parser := jsonvx.NewParser([]byte("{\"key\":\v\"value\"}"), cfg) // valid Vertical Tab
+  parser := jsonvx.NewParser([]byte("{\"key\":\f\"value\"}"), cfg) // valid Form Feed
+  parser := jsonvx.NewParser([]byte("{\"key\":\u0085\"value\"}"), cfg) // valid Next Line
+  parser := jsonvx.NewParser([]byte("{\"key\":\u00A0\"value\"}"), cfg) // valid No-Break Space
   ```
-- `AllowHexNumbers`: enables support for hexadecimal numeric literals (e.g., 0xFF).
+- `AllowHexNumbers`: enables support for hexadecimal numeric literals (e.g., 0x1F).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowHexNumbers(true))
-	parser := jsonvx.NewParser([]byte("0x1F"), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowHexNumbers(true))
+  parser := jsonvx.NewParser([]byte("0x1F"), cfg) // valid 31 in hex
   ```
 - `AllowPointEdgeNumbers`: allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowPointEdgeNumbers(true))
-	parser := jsonvx.NewParser([]byte(".5"), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowPointEdgeNumbers(true))
+  parser := jsonvx.NewParser([]byte(".5"), cfg) // valid pre decimal point number
+  parser := jsonvx.NewParser([]byte("5."), cfg) // valid post decimal point number
   ```
 - `AllowInfinity`: enables the use of `Infinity` and `-Infinity` as number values.
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowInfinity(true))
-	parser := jsonvx.NewParser([]byte("Infinity"), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowInfinity(true))
+  parser := jsonvx.NewParser([]byte("Infinity"), cfg) // valid positive infinity
+  parser := jsonvx.NewParser([]byte("-Infinity"), cfg) // valid negative infinity
+  parser := jsonvx.NewParser([]byte("+Infinity"), cfg) // valid only if AllowLeadingPlus is enabled
   ```
 - `AllowNaN`: allows `NaN` (Not-a-Number) as a numeric value.
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowNaN(true))
-	parser := jsonvx.NewParser([]byte("NaN"), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNaN(true))
+  parser := jsonvx.NewParser([]byte("NaN"), cfg) // valid NaN
+  parser := jsonvx.NewParser([]byte("-NaN"), cfg) // valid NaN
+  parser := jsonvx.NewParser([]byte("+NaN"), cfg) // valid NaN only if AllowLeadingPlus is enabled
   ```
 - `AllowLeadingPlus`: permits a leading '+' in numbers (e.g., `+42`).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowLeadingPlus(true))
-	parser := jsonvx.NewParser([]byte("+99"), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLeadingPlus(true))
+  parser := jsonvx.NewParser([]byte("+99"), cfg) // valid positive number
   ```
 - `AllowUnquoted`: enables parsing of unquoted object keys (e.g., `{foo: "bar"}`)
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowUnquoted(true))
-	parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowUnquoted(true))
+  parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg) // valid only for unquoted keys and not for unquoted values
   ```
 - `AllowSingleQuotes`: allows strings to be enclosed in single quotes (' ') in addition to double quotes.
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowSingleQuotes(true))
-	parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowSingleQuotes(true))
+  parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg) // valid single-quoted string
   ```
-- `AllowNewlineInStrings`: permits literal newlines inside string values without requiring escaping.
+- `AllowNewlineInStrings`: AllowNewlineInStrings permits multiple new line characters being escaped.
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowNewlineInStrings(true))
-	parser := jsonvx.NewParser([]byte(`"hello
-	world"`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNewlineInStrings(true))
+  parser := jsonvx.NewParser([]byte(`"hello \
+	 world"`), cfg) // valid escaped new line
   ```
 - `AllowOtherEscapeChars`: enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowOtherEscapeChars(true))
-	parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowOtherEscapeChars(true))
+  parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg) // valid other escape character
   ```
 - `AllowTrailingCommaArray`: permits a trailing comma in array literals (e.g., `[1, 2, ]`).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowTrailingCommaArray(true))
-	parser := jsonvx.NewParser([]byte(`[1, 2, 3, ]`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaArray(true))
+  parser := jsonvx.NewParser([]byte(`[1, 2, 3, ]`), cfg) // valid array with trailing comma
   ```
 - `AllowTrailingCommaObject`: permits a trailing comma in object literals (e.g., `{"a": 1,}`).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowTrailingCommaObject(true))
-	parser := jsonvx.NewParser([]byte(`{"a": 1,}`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaObject(true))
+  parser := jsonvx.NewParser([]byte(`{"a": 1,}`), cfg) // valid object with trailing comma
   ```
 - `AllowLineComments`: enables the use of single-line comments (// ...).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowLineComments(true))
-	parser := jsonvx.NewParser([]byte(`// comment\n123`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true))
+  parser := jsonvx.NewParser([]byte(`// comment 
+	123`), cfg) // valid number after liner comment
   ```
-- `AllowBlockComments`: enables the use of block comments (/* ... */).
+- `AllowBlockComments`: enables the use of block comments (/_ ... _/).
   ```go
-	cfg := jsonvx.NewParserConfig(WithAllowBlockComments(true))
-	parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowBlockComments(true))
+  parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
   ```
 - You can also combine multiple options to create a custom configuration.
-	```go
-	cfg := jsonvx.NewParserConfig(WithAllowLineComments(true), WithAllowBlockComments(true))
-	parser := jsonvx.NewParser([]byte(`// comment\n/* comment */ 123`), cfg)
-	```
+  ```go
+  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true), jsonvx.WithAllowBlockComments(true))
+  parser := jsonvx.NewParser([]byte(`// comment\n/* comment */ 123`), cfg)
+  ```
 
 ## Query Path Syntax
-...
+
+Access deeply nested fields in your parsed JSON structure using the QueryPath method, which accepts a variadic list of strings to represent the path segments.
+
+Given this json
+
+```json
+{
+  "user": {
+    "name": "Alice",
+    "emails": ["a@example.com", "b@example.com"]
+  },
+  "friends": [{ "name": "Bob" }, { "name": "Charlie" }]
+}
+```
+
+You can extract fields like this:
+
+```go
+// Get user name
+node, _ := obj.QueryPath("user", "name") // => "Alice"
+
+// Get second email
+node, _ := obj.QueryPath("user", "emails", "1") // => "b@example.com"
+
+// Get name of first friend
+node, _ := obj.QueryPath("friends", "0", "name") // => "Bob"
+```
 
 ## License
+
 [MIT](https://github.com/bube054/jsonvx/blob/main/LICENSE)
+
+# Booking confirmation
+
+## <<.proverder1>> {{.proverder1}}

@@ -25,7 +25,7 @@ type ParserConfig struct {
 
 	AllowUnquoted         bool // AllowUnquoted enables parsing of unquoted object keys (e.g., `{foo: "bar"}`).
 	AllowSingleQuotes     bool // AllowSingleQuotes allows strings to be enclosed in single quotes (' ') in addition to double quotes.
-	AllowNewlineInStrings bool // AllowNewlineInStrings permits literal newlines inside string values without requiring escaping.
+	AllowNewlineInStrings bool // AllowNewlineInStrings permits multiple new line characters being escaped.
 	AllowOtherEscapeChars bool // AllowOtherEscapeChars enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
 
 	AllowTrailingCommaArray  bool // AllowTrailingCommaArray permits a trailing comma in array literals (e.g., `[1, 2, ]`).

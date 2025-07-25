@@ -200,7 +200,7 @@ func (p *Parser) parseObject() (JSON, error) {
 
 		key := keyString.Token.Literal
 
-		if len(key) < 2 {
+		if keyString.Token.SubKind != IDENT && len(key) < 2 {
 			return nil, WrapJSONSyntaxError(keyToken)
 		}
 
@@ -229,7 +229,12 @@ func (p *Parser) parseObject() (JSON, error) {
 			return nil, WrapJSONSyntaxError(*valueString.Token)
 		}
 
-		properties = append(properties, KeyValue{key: key[1 : len(key)-1], value: value})
+		keySlice := key
+		if keyString.Token.SubKind != IDENT {
+			keySlice = key[1 : len(key)-1]
+		}
+
+		properties = append(properties, KeyValue{key: keySlice, value: value})
 
 		hasComma := p.expectCurToken(COMMA)
 		isClosingBracket := p.expectCurToken(RIGHT_CURLY_BRACE)

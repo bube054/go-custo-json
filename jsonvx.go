@@ -45,6 +45,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -234,6 +235,23 @@ func (n Number) Value() (float64, error) {
 			return 0, ErrNotNumber
 		}
 		return numVal, nil
+	case INF:
+		if bytes.Equal(n.Token.Literal, []byte("Infinity")) || 
+			bytes.Equal(n.Token.Literal, []byte("+Infinity")) {
+			return math.Inf(1), nil
+		}
+		if bytes.Equal(n.Token.Literal, []byte("-Infinity")) {
+			return math.Inf(-1), nil
+		}
+		return 0, ErrNotNumber
+	case NaN:
+		if bytes.Equal(n.Token.Literal, []byte("NaN")) ||
+			bytes.Equal(n.Token.Literal, []byte("+NaN")) ||
+			bytes.Equal(n.Token.Literal, []byte("-NaN")) {
+			return math.NaN(), nil
+		}
+		return 0, ErrNotNumber
+
 	default:
 		return 0, ErrNotNumber
 	}
@@ -334,7 +352,6 @@ func (a Array) ForEach(cb ArrayCallback) {
 		cb(item, i, a)
 	}
 }
-
 
 // AsArray safely casts a JSON to a *Array.
 func AsArray(j JSON) (*Array, bool) {

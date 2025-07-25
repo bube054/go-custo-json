@@ -193,6 +193,7 @@ func TestLexTrue(t *testing.T) {
 	RunLexerTests(t, tests)
 }
 
+
 func TestLexFalse(t *testing.T) {
 	var tests = []LexerTest{
 		{msg: "Lex valid false", input: []byte("false"), expected: []Token{NewToken(BOOLEAN, FALSE, []byte("false"), 1, 1, nil), NewToken(EOF, NONE, nil, 1, 6, nil)}, cfg: NewParserConfig()},
