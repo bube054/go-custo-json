@@ -7,17 +7,16 @@ It supports both strict `JSON` (as defined by [ECMA-404](https://datatracker.iet
 With a single `ParserConfig` struct, `jsonvx` gives you fine-grained control over how `JSON` is parsed. You can enable or disable features like:
 
 - [Hexadecimal numbers `(0xFF)`](#allowextraws)
-- `NaN` and `Infinity` as numeric values
-- Leading plus signs in numbers `(+42)`
-- Decimal edge cases like `.5` or `5.`
-- Unquoted object keys `({key: "value"})`
-- Single-quoted strings `('text')`
-- Newlines inside strings
-- Escape characters outside the standard set
-- Trailing commas in arrays or objects
-- Line comments `(// comment)`
-- Block comments `(/* comment */)`
-- Extra whitespace in unusual places
+- [`NaN` and `Infinity` as numeric values](#allownan)
+- [Leading plus signs in numbers `(+42)`](#allowleadingplus)
+- [Decimal edge cases like `.5` or `5.`](#allowpointedgenumbers)
+- [Unquoted object keys `({key: "value"})`](#allowunquoted)
+- [Single-quoted strings `('text')`](#allowsinglequotes)
+- [Newlines inside strings](#allownewlineinstrings)
+- [Escape characters outside the standard set](#allowotherescapechars)
+- [Trailing commas in arrays or objects](#allowtrailingcommaarray)
+- [Line comments `(// comment)` and Block comments `(/* comment */)`](#allowlinecomments)
+- [Extra whitespace in unusual places](#allowextraws)
 
 After parsing, `jsonvx` gives you a clean abstract syntax tree `(AST)` that you can either traverse manually or query using the built-in API. Each node in the tree implements a common JSON interface, so you can safely `inspect`, `transform`, or `stringify` data as needed.
 
@@ -120,7 +119,7 @@ node, _ := rootObj.QueryPath("friends", "2", "age") // => 47
 
 You can configure the parser using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
-- ### `AllowExtraWS`: 
+- ### `AllowExtraWS`:
   Allows extra whitespace characters that are not normally permitted by strict JSON.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowExtraWS(true))
@@ -129,92 +128,102 @@ You can configure the parser using the functional options pattern, allowing you 
   parser := jsonvx.NewParser([]byte("{\"key\":\u0085\"value\"}"), cfg) // valid Next Line
   parser := jsonvx.NewParser([]byte("{\"key\":\u00A0\"value\"}"), cfg) // valid No-Break Space
   ```
-- `AllowHexNumbers`: enables support for hexadecimal numeric literals (e.g., 0x1F).
+- ### `AllowHexNumbers`:
+  Enables support for hexadecimal numeric literals (e.g., 0x1F).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowHexNumbers(true))
   parser := jsonvx.NewParser([]byte("0x1F"), cfg) // valid 31 in hex
   ```
-- `AllowPointEdgeNumbers`: allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
+- ### `AllowPointEdgeNumbers`:
+  Allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowPointEdgeNumbers(true))
   parser := jsonvx.NewParser([]byte(".5"), cfg) // valid pre decimal point number
   parser := jsonvx.NewParser([]byte("5."), cfg) // valid post decimal point number
   ```
-- `AllowInfinity`: enables the use of `Infinity` and `-Infinity` as number values.
+- ### `AllowInfinity`:
+  Enables the use of `Infinity` and `-Infinity` as number values.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowInfinity(true))
   parser := jsonvx.NewParser([]byte("Infinity"), cfg) // valid positive infinity
   parser := jsonvx.NewParser([]byte("-Infinity"), cfg) // valid negative infinity
   parser := jsonvx.NewParser([]byte("+Infinity"), cfg) // valid only if AllowLeadingPlus is enabled
   ```
-- `AllowNaN`: allows `NaN` (Not-a-Number) as a numeric value.
+- ### `AllowNaN`:
+  Allows `NaN` (Not-a-Number) as a numeric value.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNaN(true))
   parser := jsonvx.NewParser([]byte("NaN"), cfg) // valid NaN
   parser := jsonvx.NewParser([]byte("-NaN"), cfg) // valid NaN
   parser := jsonvx.NewParser([]byte("+NaN"), cfg) // valid NaN only if AllowLeadingPlus is enabled
   ```
-- `AllowLeadingPlus`: permits a leading '+' in numbers (e.g., `+42`).
+- ### `AllowLeadingPlus`:
+  Permits a leading '+' in numbers (e.g., `+42`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLeadingPlus(true))
   parser := jsonvx.NewParser([]byte("+99"), cfg) // valid positive number
   ```
-- `AllowUnquoted`: enables parsing of unquoted object keys (e.g., `{foo: "bar"}`)
+- ### `AllowUnquoted`:
+  Enables parsing of unquoted object keys (e.g., `{foo: "bar"}`)
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowUnquoted(true))
   parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg) // valid only for unquoted keys and not for unquoted values
   ```
-- `AllowSingleQuotes`: allows strings to be enclosed in single quotes (' ') in addition to double quotes.
+- ### `AllowSingleQuotes`:
+  Allows strings to be enclosed in single quotes (' ') in addition to double quotes.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowSingleQuotes(true))
   parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg) // valid single-quoted string
   ```
-- `AllowNewlineInStrings`: AllowNewlineInStrings permits multiple new line characters being escaped.
+- ### `AllowNewlineInStrings`:
+  Permits multiple new line characters being escaped.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNewlineInStrings(true))
   parser := jsonvx.NewParser([]byte(`"hello \
-	 world"`), cfg) // valid escaped new line
+   world"`), cfg) // valid escaped new line
   ```
-- `AllowOtherEscapeChars`: enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
+- ### `AllowOtherEscapeChars`:
+  Enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowOtherEscapeChars(true))
   parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg) // valid other escape character
   ```
-- `AllowTrailingCommaArray`: permits a trailing comma in array literals (e.g., `[1, 2, ]`).
+- ### `AllowTrailingCommaArray`:
+  Permits a trailing comma in array literals (e.g., `[1, 2, ]`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaArray(true))
   parser := jsonvx.NewParser([]byte(`[1, 2, 3, ]`), cfg) // valid array with trailing comma
   ```
-- `AllowTrailingCommaObject`: permits a trailing comma in object literals (e.g., `{"a": 1,}`).
+- ### `AllowTrailingCommaObject`:
+  Permits a trailing comma in object literals (e.g., `{"a": 1,}`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaObject(true))
   parser := jsonvx.NewParser([]byte(`{"a": 1,}`), cfg) // valid object with trailing comma
   ```
-- `AllowLineComments`: enables the use of single-line comments (// ...).
+- ### `AllowLineComments`:
+  Enables the use of single-line comments (// ...).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true))
-  parser := jsonvx.NewParser([]byte(`// comment 
-	123`), cfg) // valid number after liner comment
+  parser := jsonvx.NewParser([]byte(`// comment
+  123`), cfg) // valid number after liner comment
   ```
-- `AllowBlockComments`: enables the use of block comments (/_ ... _/).
+- ### `AllowBlockComments`:
+  Enables the use of block comments (/_ ... _/).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowBlockComments(true))
   parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
   ```
-- You can obviously combine multiple options to create a custom configuration.
-  ```go
-  cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true), jsonvx.WithAllowBlockComments(true))
-  parser := jsonvx.NewParser([]byte(`// comment
-  /* comment */ 123`), cfg) // valid number after line and block comment
-  ```
 
 ## Data Types
+
 This parser supports a wide range of data types, including:
 
 ### Comments
-This parser supports both line (//) and block (/* */) comments in JSON-like input, but treats them as non-semantic, meaning they are ignored and not part of the AST.
+
+This parser supports both line (//) and block (/\* \*/) comments in JSON-like input, but treats them as non-semantic, meaning they are ignored and not part of the AST.
 
 Behavior
+
 - Comments are ignored during parsing.
 - A JSON input with only comments and no data will result in a parse error.
 
@@ -231,9 +240,11 @@ if err != nil {
 ```
 
 ### Null
+
 This example demonstrates how to parse a null value from a JSON string using the Parser and retrieve its Go representation.
 
 Behavior
+
 - A JSON null value is parsed as a NullNode.
 - When accessed using Value(), a null returns nil.
 - Internally and semantically, null in JSON maps to Go's nil.
@@ -259,9 +270,11 @@ fmt.Println(nilValue) // Output: <nil>
 ```
 
 ### Boolean
+
 This example demonstrates how to parse a boolean (true or false) value from JSON input using the Parser, and retrieve its Go representation.
 
 Behavior
+
 - JSON booleans (true, false) are parsed as BooleanNode.
 - The Go value returned by .Value() is of type bool.
 
@@ -290,9 +303,11 @@ fmt.Println(trueValue) // Output: true
 ```
 
 ### Number
+
 This example demonstrates how to parse numeric values from JSON input using jsonvx. The parser supports multiple numeric formats including:
 
 Behavior
+
 - JSON numbers are parsed as a NumberNode.
 - The Go value returned by .Value() is of type float64.
 - Integers (e.g., 42)
@@ -328,9 +343,11 @@ fmt.Println(numValue) // Output: 123456
 ```
 
 ### String
+
 This example demonstrates how to parse a JSON string value using jsonvx and retrieve its Go representation.
 
 Behavior
+
 - JSON string values are parsed as StringNode.
 - Value() returns the raw Go string value.
 
@@ -359,9 +376,11 @@ fmt.Println(strValue) // Output: Hello, World!
 ```
 
 ### Array
+
 This example demonstrates how to parse a JSON array using jsonvx, cast it to an ArrayNode, and iterate over its elements using the built-in ForEach method.
 
 Behavior
+
 - JSON arrays are parsed as ArrayNode.
 - Each element in the array is accessible using indexed access or ForEach.
 - Mixed types (e.g., numbers, strings, objects) are supported.
@@ -383,14 +402,16 @@ if !ok {
 
 // Iterate over each item using ForEach
 arrNode.ForEach(func(item jsonvx.JSON, index int, array jsonvx.Array) {
-	fmt.Printf("Item %d: %v\n", index, item) 
+	fmt.Printf("Item %d: %v\n", index, item)
 })
 ```
 
 ### Object
+
 This example shows how to parse a JSON object using jsonvx, access its fields, and iterate over key-value pairs using the ForEach method.
 
 Behavior
+
 - Objects are stored as an array of key-value pairs using the KeyValue struct.
 - Keys are stored as []byte and sorted lexicographically for deterministic order.
 - Each key-value pair is accessible using the ForEach method.
