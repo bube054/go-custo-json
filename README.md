@@ -91,7 +91,7 @@ func main() {
 
 ## Query Path Syntax
 
-Access deeply nested fields in your parsed JSON structure using the QueryPath method, which accepts a variadic list of strings to represent the path segments.
+Access deeply nested fields in your parsed JSON array or object structure using the QueryPath method, which accepts a variadic list of strings to represent the path segments.
 
 Using the json data above, we can query for specific values using the QueryPath method:
 
@@ -99,11 +99,17 @@ Using the json data above, we can query for specific values using the QueryPath 
 // Get first name
 node, _ := rootObj.QueryPath("name", "first") // => "Tom"
 
+// get children array
+node, _ := rootObj.QueryPath("children") // => ["Sara", "Alex", "Jack"]
+
 // Get second child
 node, _ := rootObj.QueryPath("children", "1") // => "Alex"
 
 // Get favorite movie (with dot in key name)
 node, _ := rootObj.QueryPath("fav.movie") // => "Deer Hunter"
+
+// Get first friend object
+node, _ := rootObj.QueryPath("friends", "0")
 
 // Get last name of first friend
 node, _ := rootObj.QueryPath("friends", "0", "last") // => "Murphy"

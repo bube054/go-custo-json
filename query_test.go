@@ -19,7 +19,7 @@ func TestJSONQuery(t *testing.T) {
 	// }`)
 
 	// parser := NewParser([]byte("\"Hello World\""), NewParserConfig())
-	parser := NewParser([]byte(`{"name": "Alice", "age": 30}`), NewParserConfig())
+	parser := NewParser([]byte(`{"name": "1", "other": null, "name": "2", "name": "3"}`), NewParserConfig())
 
 	// parse the JSON
 	node, err := parser.Parse()
