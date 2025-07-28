@@ -68,7 +68,7 @@ var (
 
 // JSON is a common interface implemented by all JSON types (Null, Boolean, etc.).
 type JSON interface {
-	String() string
+	fmt.Stringer
 }
 
 // Null represents a JSON null value.
@@ -236,7 +236,7 @@ func (n Number) Value() (float64, error) {
 		}
 		return numVal, nil
 	case INF:
-		if bytes.Equal(n.Token.Literal, []byte("Infinity")) || 
+		if bytes.Equal(n.Token.Literal, []byte("Infinity")) ||
 			bytes.Equal(n.Token.Literal, []byte("+Infinity")) {
 			return math.Inf(1), nil
 		}
@@ -343,7 +343,7 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 // - item: the current element
 // - index: the index of the element
 // - array: the array being iterated
-type ArrayCallback func(item JSON, index int, array JSON)
+type ArrayCallback func(item JSON, index int, array Array)
 
 // ForEach calls the given callback for each item in the array.
 // It provides the item, its index, and the array itself.
@@ -441,7 +441,7 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 // - key: the property's key as a byte slice
 // - value: the property's value
 // - object: the object being iterated
-type ObjectCallback func(key []byte, value JSON, object JSON)
+type ObjectCallback func(key []byte, value JSON, object Object)
 
 // ForEach calls the given callback for each key-value pair in the object.
 // It provides the key, value, and the object itself.

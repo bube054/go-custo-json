@@ -2,7 +2,6 @@ package jsonvx
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 )
 
@@ -19,7 +18,8 @@ func TestJSONQuery(t *testing.T) {
 	//   ]
 	// }`)
 
-	parser := NewParser([]byte(`/* comment */ 123`), NewParserConfig(WithAllowLineComments(true), WithAllowBlockComments(true)))
+	// parser := NewParser([]byte("\"Hello World\""), NewParserConfig())
+	parser := NewParser([]byte(`{"name": "Alice", "age": 30}`), NewParserConfig())
 
 	// parse the JSON
 	node, err := parser.Parse()
@@ -27,10 +27,15 @@ func TestJSONQuery(t *testing.T) {
 		t.Fatalf("failed to parse JSON: %s", err)
 	}
 
-	fmt.Println(node, reflect.TypeOf(node))
+	nullNode, ok := AsObject(node)
 
-	// p := math.Inf(-1)
-	// fmt.Println("ppp", p)
+	if !ok {
+		t.Fatalf("expected root node to be an object, but got: %s", err.Error())
+	}
+
+	nullNode.ForEach(func(key []byte, value JSON, object Object) {
+		fmt.Printf("Key: %s, Value: %v\n", string(key), value)
+	})
 
 	// rootObj, ok := AsObject(node)
 	// if !ok {
@@ -56,5 +61,4 @@ func TestJSONQuery(t *testing.T) {
 	// }
 
 	// fmt.Println(ageValue) // 37
-
 }
