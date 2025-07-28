@@ -6,7 +6,7 @@ It supports both strict `JSON` (as defined by [ECMA-404](https://datatracker.iet
 
 With a single `ParserConfig` struct, `jsonvx` gives you fine-grained control over how `JSON` is parsed. You can enable or disable features like:
 
-- Hexadecimal numbers `(0xFF)`
+- [Hexadecimal numbers `(0xFF)`](#allowextraws)
 - `NaN` and `Infinity` as numeric values
 - Leading plus signs in numbers `(+42)`
 - Decimal edge cases like `.5` or `5.`
@@ -98,29 +98,30 @@ Using the json data above, we can query for specific values using the QueryPath 
 
 ```go
 // Get first name
-node, _ := obj.QueryPath("name", "first") // => "Tom"
+node, _ := rootObj.QueryPath("name", "first") // => "Tom"
 
 // Get second child
-node, _ := obj.QueryPath("children", "1") // => "Alex"
+node, _ := rootObj.QueryPath("children", "1") // => "Alex"
 
 // Get favorite movie (with dot in key name)
-node, _ := obj.QueryPath("fav.movie") // => "Deer Hunter"
+node, _ := rootObj.QueryPath("fav.movie") // => "Deer Hunter"
 
 // Get last name of first friend
-node, _ := obj.QueryPath("friends", "0", "last") // => "Murphy"
+node, _ := rootObj.QueryPath("friends", "0", "last") // => "Murphy"
 
 // Get second social network of second friend
-node, _ := obj.QueryPath("friends", "1", "nets", "1") // => "tw"
+node, _ := rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
 
 // Get age of third friend
-node, _ := obj.QueryPath("friends", "2", "age") // => 47
+node, _ := rootObj.QueryPath("friends", "2", "age") // => 47
 ```
 
 ## Configuring The Parser
 
 You can configure the parser using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
-- `AllowExtraWS`: allows extra whitespace characters that are not normally permitted by strict JSON.
+- ### `AllowExtraWS`: 
+  Allows extra whitespace characters that are not normally permitted by strict JSON.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowExtraWS(true))
   parser := jsonvx.NewParser([]byte("{\"key\":\v\"value\"}"), cfg) // valid Vertical Tab
@@ -200,7 +201,7 @@ You can configure the parser using the functional options pattern, allowing you 
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowBlockComments(true))
   parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
   ```
-- You can also combine multiple options to create a custom configuration.
+- You can obviously combine multiple options to create a custom configuration.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true), jsonvx.WithAllowBlockComments(true))
   parser := jsonvx.NewParser([]byte(`// comment
