@@ -18,15 +18,15 @@ With a single `ParserConfig` struct, `jsonvx` gives you fine-grained control ove
 - [Line comments `(// comment)` and Block comments `(/* comment */)`](#allowlinecomments)
 - [Extra whitespace in unusual places](#allowextraws)
 
-After parsing, `jsonvx` gives you a clean abstract syntax tree `(AST)` that you can either traverse manually or query using the built-in API. Each node in the tree implements a common JSON interface, so you can safely `inspect`, `transform`, or `stringify` data as needed.
+After parsing, `jsonvx` gives you a clean abstract syntax tree `(AST)` that you can either traverse manually or query using the built-in API. Each node in the tree implements a common `JSON interface`, so you can safely `inspect`, `transform`, or `stringify` data as needed.
 
 `jsonvx` is designed for flexibility and correctness — not raw performance. It prioritizes clarity and configurability over speed, making it perfect for tools, linters, formatters, and config loaders where input may vary or include non-standard extensions.
 
-If you need full control over how JSON is interpreted and a structured way to work with the result, jsonvx is for you.
+If you need full control over how `JSON` is interpreted and a structured way to work with the result, `jsonvx` is for you.
 
 ## Installing
 
-To start using jsonvx, install Go and run `go get`:
+To start using `jsonvx`, install [Go](https://golang.org) and run `go get`:
 
 ```sh
 $ go get -u github.com/bube054/jsonvx
@@ -34,7 +34,7 @@ $ go get -u github.com/bube054/jsonvx
 
 ## Quick Start
 
-Get up and running with `jsonvx` in seconds. Just create a new parser, parse your JSON, and access fields using a simple path query system.
+Get up and running with `jsonvx` in seconds. Just create a new parser, parse your `JSON`, and access fields using a simple path query system.
 
 ```go
 package main
@@ -42,21 +42,21 @@ package main
 import (
 	"fmt"
 
-	"github.com/bube054/jsonvx"
+	"github.com/your/module/jsonvx"
 )
 
 func main() {
 	data := []byte(`{
-  "name": {"first": "Tom", "last": "Anderson"},
-  "age": 37,
-  "children": ["Sara", "Alex", "Jack"],
-  "fav.movie": "Deer Hunter",
-  "friends": [
-    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
-    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
-    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
-  ]
-}`)
+		"name": {"first": "Tom", "last": "Anderson"},
+		"age": 37,
+		"children": ["Sara", "Alex", "Jack"],
+		"fav.movie": "Deer Hunter",
+		"friends": [
+			{"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+			{"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+			{"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+		]
+	}`)
 
 	parser := jsonvx.NewParser(data, nil)
 
@@ -67,7 +67,7 @@ func main() {
 
 	rootObj, ok := jsonvx.AsObject(node)
 	if !ok {
-		panic(fmt.Sprintf("expected root node to be an object"))
+		panic("expected root node to be an object")
 	}
 
 	ageNode, err := rootObj.QueryPath("age")
@@ -77,7 +77,7 @@ func main() {
 
 	ageNum, ok := jsonvx.AsNumber(ageNode)
 	if !ok {
-		panic(fmt.Sprintf("expected 'age' to be a number"))
+		panic("expected 'age' to be a number")
 	}
 
 	ageValue, err := ageNum.Value()
@@ -91,41 +91,41 @@ func main() {
 
 ## Query Path Syntax
 
-Access deeply nested fields in your parsed JSON array or object structure using the QueryPath method, which accepts a variadic list of strings to represent the path segments.
+Access deeply nested fields in your parsed `JSON` `array` or `object` structure using the `QueryPath` method, which accepts a variadic list of strings to represent the path segments.
 
-Using the json data above, we can query for specific values using the QueryPath method:
+Using the `json` data above, we can query for specific values using the `QueryPath` method:
 
 ```go
 // Get first name
-node, _ := rootObj.QueryPath("name", "first") // => "Tom"
+node, _ = rootObj.QueryPath("name", "first") // => "Tom"
 
 // get children array
-node, _ := rootObj.QueryPath("children") // => ["Sara", "Alex", "Jack"]
+node, _ = rootObj.QueryPath("children") // => ["Sara", "Alex", "Jack"]
 
 // Get second child
-node, _ := rootObj.QueryPath("children", "1") // => "Alex"
+node, _ = rootObj.QueryPath("children", "1") // => "Alex"
 
 // Get favorite movie (with dot in key name)
-node, _ := rootObj.QueryPath("fav.movie") // => "Deer Hunter"
+node, _ = rootObj.QueryPath("fav.movie") // => "Deer Hunter"
 
 // Get first friend object
-node, _ := rootObj.QueryPath("friends", "0")
+node, _ = rootObj.QueryPath("friends", "0")
 
 // Get last name of first friend
-node, _ := rootObj.QueryPath("friends", "0", "last") // => "Murphy"
+node, _ = rootObj.QueryPath("friends", "0", "last") // => "Murphy"
 
 // Get second social network of second friend
-node, _ := rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
+node, _ = rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
 
 // Get age of third friend
-node, _ := rootObj.QueryPath("friends", "2", "age") // => 47
+node, _ = rootObj.QueryPath("friends", "2", "age") // => 47
 ```
 
 ## Configuring The Parser
 
 You can configure the parser using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
-- ### `AllowExtraWS`:
+  ### `AllowExtraWS`:
   Allows extra whitespace characters that are not normally permitted by strict JSON.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowExtraWS(true))
@@ -134,20 +134,20 @@ You can configure the parser using the functional options pattern, allowing you 
   parser := jsonvx.NewParser([]byte("{\"key\":\u0085\"value\"}"), cfg) // valid Next Line
   parser := jsonvx.NewParser([]byte("{\"key\":\u00A0\"value\"}"), cfg) // valid No-Break Space
   ```
-- ### `AllowHexNumbers`:
+  ### `AllowHexNumbers`:
   Enables support for hexadecimal numeric literals (e.g., 0x1F).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowHexNumbers(true))
   parser := jsonvx.NewParser([]byte("0x1F"), cfg) // valid 31 in hex
   ```
-- ### `AllowPointEdgeNumbers`:
+  ### `AllowPointEdgeNumbers`:
   Allows numbers like `.5` or `5.` without requiring a digit before/after the decimal point.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowPointEdgeNumbers(true))
   parser := jsonvx.NewParser([]byte(".5"), cfg) // valid pre decimal point number
   parser := jsonvx.NewParser([]byte("5."), cfg) // valid post decimal point number
   ```
-- ### `AllowInfinity`:
+  ### `AllowInfinity`:
   Enables the use of `Infinity` and `-Infinity` as number values.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowInfinity(true))
@@ -155,7 +155,7 @@ You can configure the parser using the functional options pattern, allowing you 
   parser := jsonvx.NewParser([]byte("-Infinity"), cfg) // valid negative infinity
   parser := jsonvx.NewParser([]byte("+Infinity"), cfg) // valid only if AllowLeadingPlus is enabled
   ```
-- ### `AllowNaN`:
+  ### `AllowNaN`:
   Allows `NaN` (Not-a-Number) as a numeric value.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNaN(true))
@@ -163,129 +163,79 @@ You can configure the parser using the functional options pattern, allowing you 
   parser := jsonvx.NewParser([]byte("-NaN"), cfg) // valid NaN
   parser := jsonvx.NewParser([]byte("+NaN"), cfg) // valid NaN only if AllowLeadingPlus is enabled
   ```
-- ### `AllowLeadingPlus`:
+  ### `AllowLeadingPlus`:
   Permits a leading '+' in numbers (e.g., `+42`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLeadingPlus(true))
   parser := jsonvx.NewParser([]byte("+99"), cfg) // valid positive number
   ```
-- ### `AllowUnquoted`:
+  ### `AllowUnquoted`:
   Enables parsing of unquoted object keys (e.g., `{foo: "bar"}`)
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowUnquoted(true))
   parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg) // valid only for unquoted keys and not for unquoted values
   ```
-- ### `AllowSingleQuotes`:
+  ### `AllowSingleQuotes`:
   Allows strings to be enclosed in single quotes (' ') in addition to double quotes.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowSingleQuotes(true))
   parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg) // valid single-quoted string
   ```
-- ### `AllowNewlineInStrings`:
+  ### `AllowNewlineInStrings`:
   Permits multiple new line characters being escaped.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNewlineInStrings(true))
   parser := jsonvx.NewParser([]byte(`"hello \
    world"`), cfg) // valid escaped new line
   ```
-- ### `AllowOtherEscapeChars`:
+  ### `AllowOtherEscapeChars`:
   Enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowOtherEscapeChars(true))
   parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg) // valid other escape character
   ```
-- ### `AllowTrailingCommaArray`:
+  ### `AllowTrailingCommaArray`:
   Permits a trailing comma in array literals (e.g., `[1, 2, ]`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaArray(true))
   parser := jsonvx.NewParser([]byte(`[1, 2, 3, ]`), cfg) // valid array with trailing comma
   ```
-- ### `AllowTrailingCommaObject`:
+  ### `AllowTrailingCommaObject`:
   Permits a trailing comma in object literals (e.g., `{"a": 1,}`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowTrailingCommaObject(true))
   parser := jsonvx.NewParser([]byte(`{"a": 1,}`), cfg) // valid object with trailing comma
   ```
-- ### `AllowLineComments`:
+  ### `AllowLineComments`:
   Enables the use of single-line comments (// ...).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowLineComments(true))
   parser := jsonvx.NewParser([]byte(`// comment
   123`), cfg) // valid number after liner comment
   ```
-- ### `AllowBlockComments`:
+  ### `AllowBlockComments`:
   Enables the use of block comments (/_ ... _/).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowBlockComments(true))
   parser := jsonvx.NewParser([]byte(`/* comment */ 123`), cfg)
   ```
 
-## Data Types
+## Parsing behavior
+Below are examples of how to `parse` and `retrieve` values from the parsed `JSON` input using the `Parser`.
 
-This parser supports a wide range of data types, including:
+### Object
 
-### Comments
-
-This parser supports both line (//) and block (/\* \*/) comments in JSON-like input, but treats them as non-semantic, meaning they are ignored and not part of the AST.
-
-Behavior
-
-- Comments are ignored during parsing.
-- A JSON input with only comments and no data will result in a parse error.
-
-```go
-parser := jsonvx.NewParser([]byte("/* Block Comment */"), jsonvx.NewParserConfig(
-	jsonvx.WithAllowBlockComments(true),
-))
-
-// parse the JSON
-node, err := parser.Parse()
-if err != nil {
-	panic(fmt.Sprintf("failed to parse JSON: %s", err))
-}
-```
-
-### Null
-
-This example demonstrates how to parse a null value from a JSON string using the Parser and retrieve its Go representation.
+This example shows how to parse a `JSON` object using `jsonvx`, access its fields, and iterate over key-value pairs using the `ForEach` method.
 
 Behavior
 
-- A JSON null value is parsed as a NullNode.
-- When accessed using Value(), a null returns nil.
-- Internally and semantically, null in JSON maps to Go's nil.
+- `Objects` are stored as an `array` of key-value pairs using the `jsonvx.KeyValue` struct.
+- Keys are stored as `[]byte` and `sorted` `lexicographically` for faster value retrieval.
+- Each key-value pair is accessible using the `ForEach` method.
+- Mixed value types (e.g., `numbers`, `strings`, `objects`) are supported.
 
 ```go
-parser := jsonvx.NewParser([]byte("null"), jsonvx.NewParserConfig())
-
-// Parse the JSON input
-node, err := parser.Parse()
-if err != nil {
-	t.Fatalf("failed to parse JSON: %s", err)
-}
-
-// Cast the parsed node to a NullNode
-nullNode, ok := jsonvx.AsNull(node)
-if !ok {
-	t.Fatalf("expected root node to be a null value, but got: %s", err.Error())
-}
-
-// Extract the underlying Go value
-nilValue, _ := nullNode.Value()
-fmt.Println(nilValue) // Output: <nil>
-```
-
-### Boolean
-
-This example demonstrates how to parse a boolean (true or false) value from JSON input using the Parser, and retrieve its Go representation.
-
-Behavior
-
-- JSON booleans (true, false) are parsed as BooleanNode.
-- The Go value returned by .Value() is of type bool.
-
-```go
-parser := jsonvx.NewParser([]byte("true"), jsonvx.NewParserConfig())
+parser := jsonvx.NewParser([]byte(`{"name": "Alice", "age": 30}`), jsonvx.NewParserConfig())
 
 // Parse the JSON input
 node, err := parser.Parse()
@@ -293,19 +243,80 @@ if err != nil {
 	panic(fmt.Sprintf("failed to parse JSON: %s", err))
 }
 
-// Cast the parsed node to a BooleanNode
-boolNode, ok := jsonvx.AsBoolean(node)
+// Cast the parsed node to an ObjectNode
+objNode, ok := jsonvx.AsObject(node)
 if !ok {
-	panic(fmt.Sprintf("expected root node to be a boolean"))
+	panic(fmt.Sprintf("expected root node to be an object"))
 }
 
-// Extract the underlying Go value
-trueValue, err := boolNode.Value()
+// Iterate over key-value pairs using ForEach
+objNode.ForEach(func(key []byte, value jsonvx.JSON, object jsonvx.Object) {
+	fmt.Printf("Key: %s, Value: %v\n", string(key), value)
+})
+```
+
+### Array
+
+This example demonstrates how to parse a `JSON` `array` using `jsonvx`, cast it to an `Array` node, and iterate over its elements using the built-in ForEach method.
+
+Behavior
+
+- `JSON` arrays are parsed as `Array` node.
+- Each element in the `Array` is accessible using indexed access or `ForEach`.
+- Mixed types (e.g., `numbers`, `strings`, `objects`) are supported.
+
+```go
+parser := jsonvx.NewParser([]byte(`[1, 2, 3]`), jsonvx.NewParserConfig())
+
+// Parse the JSON input
+node, err := parser.Parse()
 if err != nil {
-	panic(fmt.Sprintf("failed to extract boolean value: %s", err))
+	panic(fmt.Sprintf("failed to parse JSON: %s", err))
 }
 
-fmt.Println(trueValue) // Output: true
+// Cast the parsed node to an ArrayNode
+arrNode, ok := jsonvx.AsArray(node)
+if !ok {
+	panic(fmt.Sprintf("expected root node to be an array"))
+}
+
+// Iterate over each item using ForEach
+arrNode.ForEach(func(item jsonvx.JSON, index int, array jsonvx.Array) {
+	fmt.Printf("Item %d: %v\n", index, item)
+})
+```
+
+### String
+
+This example demonstrates how to parse a JSON string value using jsonvx and retrieve its Go representation.
+
+Behavior
+
+- JSON string values are parsed as StringNode.
+- Value() returns the raw Go string value.
+
+```go
+parser := jsonvx.NewParser([]byte(`"Hello, World!"`), jsonvx.NewParserConfig())
+
+// Parse the JSON input
+node, err := parser.Parse()
+if err != nil {
+	panic(fmt.Sprintf("failed to parse JSON: %s", err))
+}
+
+// Cast the parsed node to a StringNode
+strNode, ok := jsonvx.AsString(node)
+if !ok {
+	panic(fmt.Sprintf("expected root node to be a string"))
+}
+
+// Extract the underlying Go string value
+strValue, err := strNode.Value()
+if err != nil {
+	panic(fmt.Sprintf("failed to extract string value: %s", err))
+}
+
+fmt.Println(strValue) // Output: Hello, World!
 ```
 
 ### Number
@@ -348,17 +359,17 @@ if err != nil {
 fmt.Println(numValue) // Output: 123456
 ```
 
-### String
+### Boolean
 
-This example demonstrates how to parse a JSON string value using jsonvx and retrieve its Go representation.
+This example demonstrates how to parse a boolean (true or false) value from JSON input using the Parser, and retrieve its Go representation.
 
 Behavior
 
-- JSON string values are parsed as StringNode.
-- Value() returns the raw Go string value.
+- JSON booleans (true, false) are parsed as BooleanNode.
+- The Go value returned by .Value() is of type bool.
 
 ```go
-parser := jsonvx.NewParser([]byte(`"Hello, World!"`), jsonvx.NewParserConfig())
+parser := jsonvx.NewParser([]byte("true"), jsonvx.NewParserConfig())
 
 // Parse the JSON input
 node, err := parser.Parse()
@@ -366,84 +377,81 @@ if err != nil {
 	panic(fmt.Sprintf("failed to parse JSON: %s", err))
 }
 
-// Cast the parsed node to a StringNode
-strNode, ok := jsonvx.AsString(node)
+// Cast the parsed node to a BooleanNode
+boolNode, ok := jsonvx.AsBoolean(node)
 if !ok {
-	panic(fmt.Sprintf("expected root node to be a string"))
+	panic(fmt.Sprintf("expected root node to be a boolean"))
 }
 
-// Extract the underlying Go string value
-strValue, err := strNode.Value()
+// Extract the underlying Go value
+trueValue, err := boolNode.Value()
 if err != nil {
-	panic(fmt.Sprintf("failed to extract string value: %s", err))
+	panic(fmt.Sprintf("failed to extract boolean value: %s", err))
 }
 
-fmt.Println(strValue) // Output: Hello, World!
+fmt.Println(trueValue) // Output: true
 ```
 
-### Array
+### Null
 
-This example demonstrates how to parse a JSON array using jsonvx, cast it to an ArrayNode, and iterate over its elements using the built-in ForEach method.
+This example demonstrates how to parse a null value from a JSON string using the Parser and retrieve its Go representation.
 
 Behavior
 
-- JSON arrays are parsed as ArrayNode.
-- Each element in the array is accessible using indexed access or ForEach.
-- Mixed types (e.g., numbers, strings, objects) are supported.
+- A JSON null value is parsed as a NullNode.
+- When accessed using Value(), a null returns nil.
+- Internally and semantically, null in JSON maps to Go's nil.
 
 ```go
-parser := jsonvx.NewParser([]byte(`[1, 2, 3]`), jsonvx.NewParserConfig())
+parser := jsonvx.NewParser([]byte("null"), jsonvx.NewParserConfig())
 
 // Parse the JSON input
 node, err := parser.Parse()
 if err != nil {
-	panic(fmt.Sprintf("failed to parse JSON: %s", err))
+	t.Fatalf("failed to parse JSON: %s", err)
 }
 
-// Cast the parsed node to an ArrayNode
-arrNode, ok := jsonvx.AsArray(node)
+// Cast the parsed node to a NullNode
+nullNode, ok := jsonvx.AsNull(node)
 if !ok {
-	panic(fmt.Sprintf("expected root node to be an array"))
+	t.Fatalf("expected root node to be a null value, but got: %s", err.Error())
 }
 
-// Iterate over each item using ForEach
-arrNode.ForEach(func(item jsonvx.JSON, index int, array jsonvx.Array) {
-	fmt.Printf("Item %d: %v\n", index, item)
-})
+// Extract the underlying Go value
+nilValue, _ := nullNode.Value()
+fmt.Println(nilValue) // Output: <nil>
 ```
 
-### Object
+### Comments
 
-This example shows how to parse a JSON object using jsonvx, access its fields, and iterate over key-value pairs using the ForEach method.
+This `parser` supports both line `(//)` and block `(/\* \*/)` comments in JSON-like input, but treats them as non-semantic, meaning they are ignored and not part of the `AST`.
 
 Behavior
 
-- Objects are stored as an array of key-value pairs using the KeyValue struct.
-- Keys are stored as []byte and sorted lexicographically for deterministic order.
-- Each key-value pair is accessible using the ForEach method.
-- Mixed value types (e.g., numbers, strings, objects) are supported.
+- `Comments` are ignored during parsing.
+- A `JSON` input with only comments and no data will result in a parse error.
 
 ```go
-parser := jsonvx.NewParser([]byte(`{"name": "Alice", "age": 30}`), jsonvx.NewParserConfig())
+parser := jsonvx.NewParser([]byte("/* Block Comment */"), jsonvx.NewParserConfig(
+	jsonvx.WithAllowBlockComments(true), jsonvx.WithAllowLineComments(true),
+))
 
-// Parse the JSON input
+// parse the JSON
 node, err := parser.Parse()
 if err != nil {
 	panic(fmt.Sprintf("failed to parse JSON: %s", err))
 }
-
-// Cast the parsed node to an ObjectNode
-objNode, ok := jsonvx.AsObject(node)
-if !ok {
-	panic(fmt.Sprintf("expected root node to be an object"))
-}
-
-// Iterate over key-value pairs using ForEach
-objNode.ForEach(func(key []byte, value jsonvx.JSON, object jsonvx.Object) {
-	fmt.Printf("Key: %s, Value: %v\n", string(key), value)
-})
 ```
+
+## Maintainers
+
+- [bube054](https://github.com/bube054) - **Attah Gbubemi David (author)**
+
+## Other helpful projects
+
+- [ginvalidator](https://github.com/bube054/ginvalidator)
+- [validatorgo](https://github.com/bube054/validatorgo)
 
 ## License
 
-[MIT](https://github.com/bube054/jsonvx/blob/main/LICENSE)
+This project is licensed under the [MIT](https://opensource.org/license/mit). See the [LICENSE](https://github.com/bube054/jsonvx/blob/master/LICENSE) file for details.

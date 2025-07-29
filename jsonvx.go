@@ -284,7 +284,7 @@ func (a Array) String() string {
 		if i == len(a.Items)-1 {
 			builder.WriteString(fmt.Sprintf("%v", item))
 		} else {
-			builder.WriteString(fmt.Sprintf("%v,", item))
+			builder.WriteString(fmt.Sprintf("%v, ", item))
 		}
 	}
 	builder.WriteString("]")
@@ -387,7 +387,7 @@ func (o Object) String() string {
 		if ind == length-1 {
 			builder.WriteString(fmt.Sprintf("%s: %v", kv.key, kv.value))
 		} else {
-			builder.WriteString(fmt.Sprintf("%s: %v,", kv.key, kv.value))
+			builder.WriteString(fmt.Sprintf("%s: %v, ", kv.key, kv.value))
 		}
 	}
 	builder.WriteString("}")

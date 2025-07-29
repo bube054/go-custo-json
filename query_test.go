@@ -2,24 +2,25 @@ package jsonvx
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
 func TestJSONQuery(t *testing.T) {
-	// 	data := []byte(`{
-	//   "name": {"first": "Tom", "last": "Anderson"},
-	//   "age": 37,
-	//   "children": ["Sara", "Alex", "Jack"],
-	//   "fav.movie": "Deer Hunter",
-	//   "friends": [
-	//     {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
-	//     {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
-	//     {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
-	//   ]
-	// }`)
+	data := []byte(`{
+	  "name": {"first": "Tom", "last": "Anderson"},
+	  "age": 37,
+	  "children": ["Sara", "Alex", "Jack"],
+	  "fav.movie": "Deer Hunter",
+	  "friends": [
+	    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+	    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+	    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+	  ]
+	}`)
 
+	parser := NewParser((data), NewParserConfig())
 	// parser := NewParser([]byte("\"Hello World\""), NewParserConfig())
-	parser := NewParser([]byte(`{"name": "1", "other": null, "name": "2", "name": "3"}`), NewParserConfig())
 
 	// parse the JSON
 	node, err := parser.Parse()
@@ -27,15 +28,19 @@ func TestJSONQuery(t *testing.T) {
 		t.Fatalf("failed to parse JSON: %s", err)
 	}
 
-	nullNode, ok := AsObject(node)
+	rootObj, ok := AsObject(node)
 
 	if !ok {
 		t.Fatalf("expected root node to be an object, but got: %s", err.Error())
 	}
 
-	nullNode.ForEach(func(key []byte, value JSON, object Object) {
-		fmt.Printf("Key: %s, Value: %v\n", string(key), value)
-	})
+	node, _ = rootObj.QueryPath("friends", "0")
+
+	fmt.Println(node, reflect.TypeOf(node))
+
+	// nullNode.ForEach(func(key []byte, value JSON, object Object) {
+	// 	fmt.Printf("Key: %s, Value: %v\n", string(key), value)
+	// })
 
 	// rootObj, ok := AsObject(node)
 	// if !ok {
