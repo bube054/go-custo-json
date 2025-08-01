@@ -345,3 +345,19 @@ func (tks Tokens) Split() ([][2]int, error) {
 
 	return streams, nil
 }
+
+func (tks Tokens) Equal(tks2 Tokens) bool {
+	if len(tks) != len(tks2) {
+		return false
+	}
+
+	for i, tk := range tks {
+		tk2 := tks[i]
+
+		if !tk.Equal(&tk2) {
+			return false
+		}
+	}
+
+	return true
+}

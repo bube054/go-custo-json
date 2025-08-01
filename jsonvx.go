@@ -226,7 +226,7 @@ func (s *String) Equal(s2 JSON) bool {
 		return s == s2
 	}
 
-	other, ok := AsString(s)
+	other, ok := AsString(s2)
 
 	if !ok {
 		return false
@@ -443,6 +443,10 @@ func AsArray(j JSON) (*Array, bool) {
 type KeyValue struct {
 	key   []byte
 	value JSON
+}
+
+func newKeyValue(key []byte, value JSON) KeyValue {
+	return KeyValue{key: key, value: value}
 }
 
 func (kv *KeyValue) Equal(kv2 *KeyValue) bool {

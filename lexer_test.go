@@ -1,7 +1,6 @@
 package jsonvx
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -12,15 +11,21 @@ type LexerTest struct {
 	expected Tokens
 }
 
-func RunLexerTests(t *testing.T, tests []LexerTest) {
+func runLexerTests(t *testing.T, tests []LexerTest) {
 	for _, test := range tests {
 		t.Run(test.msg, func(t *testing.T) {
 			lexer := NewLexer(test.input, test.cfg)
 			got := lexer.Tokens()
 
-			if !reflect.DeepEqual(got, test.expected) {
+			// if !reflect.DeepEqual(got, test.expected) {
+			if got == nil || test.expected == nil {
+				if got != nil || test.expected != nil {
+					t.Errorf("got %v, expected %v", got, test.expected)
+				}
+			} else if !got.Equal(test.expected) {
 				t.Errorf("got %v, expected %v", got, test.expected)
 			}
+
 		})
 	}
 }
@@ -31,7 +36,7 @@ func TestLexNothing(t *testing.T) {
 		{msg: "Lex nothing", input: []byte(``), expected: []Token{newToken(EOF, NONE, nil, 1, 1, nil)}},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexWhiteSpace(t *testing.T) {
@@ -61,7 +66,7 @@ func TestLexWhiteSpace(t *testing.T) {
 		{msg: "Lex ws, no-break space with AllowExtraWS", input: []byte{0xA0}, expected: []Token{newToken(WHITESPACE, NONE, []byte{0xA0}, 1, 1, nil), newToken(EOF, NONE, nil, 1, 2, nil)}, cfg: NewParserConfig(WithAllowExtraWS(true))},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexDelimiters(t *testing.T) {
@@ -74,7 +79,7 @@ func TestLexDelimiters(t *testing.T) {
 		{msg: "Lex :", input: []byte(":"), expected: []Token{newToken(COLON, NONE, []byte(":"), 1, 1, nil), newToken(EOF, NONE, nil, 1, 2, nil)}, cfg: NewParserConfig()},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexComment(t *testing.T) {
@@ -101,7 +106,7 @@ func TestLexComment(t *testing.T) {
 		{msg: "Lex valid block comment with AllowBlockComments", input: []byte("/* This is a block comment*/"), expected: []Token{newToken(COMMENT, BLOCK_COMMENT, []byte("/* This is a block comment*/"), 1, 1, nil), newToken(EOF, NONE, nil, 1, 29, nil)}, cfg: NewParserConfig(WithAllowBlockComments(true))},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexString(t *testing.T) {
@@ -155,7 +160,7 @@ func TestLexString(t *testing.T) {
 		// // "`), 1, 1, nil)}, cfg: NewParserConfig(WithAllowSingleQuotes(true), WithAllowNewlineInStrings(false))},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexIdent(t *testing.T) {
@@ -170,7 +175,7 @@ func TestLexIdent(t *testing.T) {
 		{msg: "Lex valid ident with AllowUnquoted with space", input: []byte("ident "), expected: []Token{newToken(STRING, IDENT, []byte("ident"), 1, 1, nil), newToken(WHITESPACE, NONE, []byte(" "), 1, 6, nil), newToken(EOF, NONE, nil, 1, 7, nil)}, cfg: NewParserConfig(WithAllowUnquoted(true))},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexNull(t *testing.T) {
@@ -180,7 +185,7 @@ func TestLexNull(t *testing.T) {
 		{msg: "Lex invalid null nil", input: []byte("nil"), expected: []Token{newToken(ILLEGAL, INVALID_CHARACTER, []byte("nil"), 1, 1, nil)}, cfg: NewParserConfig()},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexTrue(t *testing.T) {
@@ -190,7 +195,7 @@ func TestLexTrue(t *testing.T) {
 		{msg: "Lex invalid t", input: []byte("t"), expected: []Token{newToken(ILLEGAL, INVALID_CHARACTER, []byte("t"), 1, 1, nil)}, cfg: NewParserConfig()},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexFalse(t *testing.T) {
@@ -200,7 +205,7 @@ func TestLexFalse(t *testing.T) {
 		{msg: "Lex invalid f", input: []byte("f"), expected: []Token{newToken(ILLEGAL, INVALID_CHARACTER, []byte("f"), 1, 1, nil)}, cfg: NewParserConfig()},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
 
 func TestLexNumber(t *testing.T) {
@@ -247,5 +252,5 @@ func TestLexNumber(t *testing.T) {
 		{msg: "Lex neg hex with AllowHexNumbers and AllowLeadingPlus", input: []byte("-0x1A"), expected: []Token{newToken(NUMBER, HEX, []byte("-0x1A"), 1, 1, nil), newToken(EOF, NONE, nil, 1, 6, nil)}, cfg: NewParserConfig(WithAllowHexNumbers(true), WithAllowLeadingPlus(true))},
 	}
 
-	RunLexerTests(t, tests)
+	runLexerTests(t, tests)
 }
