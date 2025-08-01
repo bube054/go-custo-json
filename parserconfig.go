@@ -167,3 +167,23 @@ func WithAllowBlockComments(allow bool) func(*ParserConfig) {
 		c.AllowBlockComments = allow
 	}
 }
+
+// JSON5Config returns a ParserConfig with all features enabled for JSON5 compatibility.
+func JSON5Config() *ParserConfig {
+	return &ParserConfig{
+		AllowExtraWS:             true,
+		AllowHexNumbers:          true,
+		AllowPointEdgeNumbers:    true,
+		AllowInfinity:            true,
+		AllowNaN:                 true,
+		AllowLeadingPlus:         true,
+		AllowUnquoted:            true,
+		AllowSingleQuotes:        true,
+		AllowNewlineInStrings:    true,
+		AllowOtherEscapeChars:    true,
+		AllowTrailingCommaArray:  true,
+		AllowTrailingCommaObject: true,
+		AllowLineComments:        true,
+		AllowBlockComments:       true,
+	}
+}

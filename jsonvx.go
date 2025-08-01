@@ -1,44 +1,38 @@
-// Package jsonvx provides a highly configurable parser, querier, and formatter for JSON-like data.
+// Package jsonvx is a highly configurable JSON parser, querier, and formatter for Go.
 //
-// jsonvx is designed to support both strict ECMA-404-compliant JSON and a wide range of non-standard,
-// relaxed variants — including JSON5 and other formats commonly found in real-world data. Its core
-// philosophy is flexibility: developers can fine-tune nearly every aspect of JSON parsing behavior
-// through the ParserConfig struct, enabling or disabling specific features to suit various parsing needs.
+// It supports both strict JSON (as defined by [ECMA-404]) and up to a more relaxed variant
+// such as [JSON5]. This makes it ideal for parsing user-generated data, configuration files,
+// or legacy formats that don't fully comply with the JSON specification.
 //
-// Key features:
+// With a single [ParserConfig] struct, jsonvx gives you fine-grained control over how JSON is parsed.
+// You can enable or disable features like:
 //
-//   - Parsing:
+//   - Hexadecimal numbers (0xFF)
+//   - NaN and Infinity as numeric values
+//   - Leading plus signs in numbers (+42)
+//   - Decimal edge cases like .5 or 5.
+//   - Unquoted object keys ({key: "value"})
+//   - Single-quoted strings ('text')
+//   - Newlines inside strings
+//   - Escape characters outside the standard set
+//   - Trailing commas in arrays or objects
+//   - Line comments (// comment) and Block comments (/* comment */)
+//   - Extra whitespace in unusual places
+//   - Enable JSON5
 //
-//   - Strict mode (standards-compliant) and relaxed mode (e.g., unquoted keys, single-quoted strings)
+// After parsing, jsonvx gives you a clean abstract syntax tree (AST) that you can either traverse manually
+// or query using the built-in API. Each node in the tree implements a common JSON interface, so you can safely
+// inspect, transform, or stringify data as needed.
 //
-//   - Support for hexadecimal numbers, `Infinity`, `NaN`, and leading plus signs
+// jsonvx is designed for flexibility and correctness — not raw performance. It prioritizes clarity and
+// configurability over speed, making it perfect for tools, linters, formatters, and config loaders where
+// input may vary or include non-standard extensions.
 //
-//   - Support for trailing commas, line/block comments, and non-standard escape sequences
+// If you need full control over how JSON is interpreted and a structured way to work with the result,
+// jsonvx is for you.
 //
-//   - Configurable whitespace handling and edge-case number formats
-//
-//   - Querying:
-//
-//   - Traverse deeply nested arrays and objects using path-based access
-//
-//   - Query scalar values with meaningful error reporting
-//
-//   - Type-safe access to JSON values via Go interfaces
-//
-//   - Formatting:
-//
-//   - Render parsed JSON back into readable, syntax-highlighted string representations
-//
-//   - Useful for diagnostics, debugging, or building REPL-like tools
-//
-// jsonvx is especially useful when working with JSON data from dynamic sources,
-// legacy APIs, or configuration files that bend or break the formal rules of JSON.
-//
-// See the ParserConfig struct for all available parsing options.
-//
-// Specification references:
-//   - ECMA-404: https://datatracker.ietf.org/doc/html/rfc7159
-//   - JSON5: https://json5.org/
+// [ECMA-404]: https://datatracker.ietf.org/doc/html/rfc7159
+// [JSON5]: https://json5.org/
 package jsonvx
 
 import (

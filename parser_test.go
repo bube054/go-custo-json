@@ -187,7 +187,7 @@ func TestJSONParserArray(t *testing.T) {
 
 func TestJSONParserObject(t *testing.T) {
 	var tests = []ParserTest{
-		// {msg: "Parse empty object", input: []byte("{}"), expectedNode: &Object{Properties: []KeyValue{}}, expectedErr: nil, cfg: NewParserConfig(WithAllowTrailingCommaObject(false))},
+		{msg: "Parse empty object", input: []byte("{}"), expectedNode: &Object{Properties: []KeyValue{}}, expectedErr: nil, cfg: NewParserConfig(WithAllowTrailingCommaObject(false))},
 		{msg: "Parse no trailing comma object, with no trailing comma allowed", input: []byte(`{"key": "value"}`), expectedNode: &Object{
 			Properties: []KeyValue{
 				newKeyValue([]byte(`key`), &String{Token: newTokenPtr(STRING, DOUBLE_QUOTED, []byte(`"value"`), 1, 9, nil)}),

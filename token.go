@@ -155,7 +155,7 @@ type Token struct {
 
 // newToken creates and returns a new Token.
 // If cb is non-nil, it is called during token creation.
-func newToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) Token {
+func newToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, column int, cb func()) Token {
 	if cb != nil {
 		cb()
 	}
@@ -165,14 +165,14 @@ func newToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start 
 		SubKind: subKind,
 		Literal: literal,
 		Line:    line,
-		Column:  start,
+		Column:  column,
 	}
 }
 
 // newTokenPtr creates and returns a pointer to a new Token.
 // If cb is non-nil, it is called during token creation.
-func newTokenPtr(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) *Token {
-	token := newToken(kind, subKind, literal, line, start, cb)
+func newTokenPtr(kind TokenKind, subKind TokenSubKind, literal []byte, line, column int, cb func()) *Token {
+	token := newToken(kind, subKind, literal, line, column, cb)
 
 	return &token
 }
