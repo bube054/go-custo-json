@@ -119,7 +119,7 @@ strNode, _ = rootObj.QueryPath("friends", "0", "last") // => "Murphy"
 strNode, _ = rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
 
 // Get age of third friend
-nuNode, _ := rootObj.QueryPath("friends", "2", "age") // => 47
+numNode, _ := rootObj.QueryPath("friends", "2", "age") // => 47
 ```
 
 ## Configuring The Parser
