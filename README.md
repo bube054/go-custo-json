@@ -35,7 +35,7 @@ $ go get -u github.com/bube054/jsonvx
 
 ## Quick Start
 
-Get up and running with `jsonvx` in seconds. Just create a new parser, parse your `JSON`, and access fields using a [simple path query system](#query-path-syntax).
+Get up and running with `jsonvx` in seconds. Just create a new `Parser`, parse your `JSON`, and access fields using a [simple path query system](#query-path-syntax).
 
 ```go
 package main
@@ -127,7 +127,7 @@ nuNode, _ := rootObj.QueryPath("friends", "2", "age") // => 47
 You can configure the `Parser` using the functional options pattern, allowing you to enable relaxed JSON features individually. By default, the parser is strict (all options disabled), matching the [ECMA-404](https://datatracker.ietf.org/doc/html/rfc7159) specification. To allow non-standard or user-friendly formats (like [JSON5](https://json5.org)), pass options when creating the config:
 
   ### `AllowExtraWS`:
-  Allows extra whitespace characters that are not normally permitted by strict JSON.
+  Allows extra whitespace characters that are not normally permitted by strict `JSON`.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowExtraWS(true))
   parser := jsonvx.NewParser([]byte("{\"key\":\v\"value\"}"), cfg) // valid Vertical Tab
@@ -136,7 +136,7 @@ You can configure the `Parser` using the functional options pattern, allowing yo
   parser := jsonvx.NewParser([]byte("{\"key\":\u00A0\"value\"}"), cfg) // valid No-Break Space
   ```
   ### `AllowHexNumbers`:
-  Enables support for hexadecimal numeric literals (e.g., 0x1F).
+  Enables support for hexadecimal numeric literals (e.g., `0x1F`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowHexNumbers(true))
   parser := jsonvx.NewParser([]byte("0x1F"), cfg) // valid 31 in hex
@@ -149,7 +149,7 @@ You can configure the `Parser` using the functional options pattern, allowing yo
   parser := jsonvx.NewParser([]byte("5."), cfg) // valid post decimal point number
   ```
   ### `AllowInfinity`:
-  Enables the use of `Infinity` and `-Infinity` as number values.
+  Enables the use of `Infinity`, `-Infinity` and `+Infinity` as number values.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowInfinity(true))
   parser := jsonvx.NewParser([]byte("Infinity"), cfg) // valid positive infinity
@@ -177,20 +177,20 @@ You can configure the `Parser` using the functional options pattern, allowing yo
   parser := jsonvx.NewParser([]byte(`{foo: "bar"}`), cfg) // valid only for unquoted keys and not for unquoted values
   ```
   ### `AllowSingleQuotes`:
-  Allows strings to be enclosed in single quotes (' ') in addition to double quotes.
+  Allows strings to be enclosed in single quotes (`' '`) in addition to double quotes.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowSingleQuotes(true))
   parser := jsonvx.NewParser([]byte(`{'name': 'Tom'}`), cfg) // valid single-quoted string
   ```
   ### `AllowNewlineInStrings`:
-  Permits multiple new line characters being escaped.
+  Permits multiple new line characters (`\n`) being escaped.
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowNewlineInStrings(true))
   parser := jsonvx.NewParser([]byte(`"hello \
    world"`), cfg) // valid escaped new line
   ```
   ### `AllowOtherEscapeChars`:
-  Enables support for escape sequences other than \\, \/, \b, \n, \f, \r, \t and Unicode escapes (\uXXXX).
+  Enables support for escape sequences other than `\\`, `\/`, `\b`, `\n`, `\f`, `\r`, `\t` and Unicode escapes (`\uXXXX`).
   ```go
   cfg := jsonvx.NewParserConfig(jsonvx.WithAllowOtherEscapeChars(true))
   parser := jsonvx.NewParser([]byte(`"hello\qworld"`), cfg) // valid other escape character
@@ -240,7 +240,7 @@ No \\n's!",
   ```
 
 ## Parsing behavior
-Below are examples of how to `parse` and `retrieve` values from the parsed `JSON` input using the `Parser`.
+Below are examples of how to `parse`, `traverse` and `retrieve` values from the parsed `JSON` input using the `Parser`.
 
 ### Object
 - `Objects` are stored as a `slice` of `jsonvx.KeyValue` struct.
@@ -336,7 +336,7 @@ fmt.Println(strValue) // Output: Hello, World!
 
 - JSON numbers are parsed as a `jsonvx.Number`.
 - `Value()` returns the raw Go `float64` value.
-- `Integer`, `Float`, `SciNot`, `Hex`, `Infinity` and ironically `NaN` subtypes are supported.
+- `Integer`, `Float`, `SciNot`, `Hex`, `Infinity` and ironically `NaN` number types are supported.
 
 This example demonstrates how to parse a `JSON` `number` using `jsonvx`, cast it to an `jsonvx.Number` node, and get `float64` its value using the built-in `Value` method.
 
