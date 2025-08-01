@@ -62,7 +62,7 @@ func (l *Lexer) Token() Token {
 		'\n', // line feed (U+000A)
 		'\r', // carriage return (U+000D)
 		'\t': // horizontal tab (U+0009)
-		return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, col, l.readChar)
+		return newToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, col, l.readChar)
 
 	case
 		'\v',     // vertical tab (U+000B)
@@ -70,40 +70,40 @@ func (l *Lexer) Token() Token {
 		'\u0085', // next line (NEL, U+0085)
 		'\u00A0': // no-break space (U+00A0)
 		if l.config.AllowExtraWS {
-			return NewToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, col, l.readChar)
+			return newToken(WHITESPACE, NONE, l.input[l.pos:l.readPos], l.line, col, l.readChar)
 		} else {
-			return NewToken(ILLEGAL, INVALID_WHITESPACE, l.input[l.pos:], l.line, col, nil)
+			return newToken(ILLEGAL, INVALID_WHITESPACE, l.input[l.pos:], l.line, col, nil)
 		}
 		// Lexing white space ends here
 
 	// Lexing left curly brace starts here
 	case '{':
-		return NewToken(LEFT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(LEFT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 	// Lexing left curly brace ends here
 
 	// Lexing right brace starts here
 	case '}':
-		return NewToken(RIGHT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(RIGHT_CURLY_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 	// Lexing right brace ends here
 
 	// Lexing left square brace starts here
 	case '[':
-		return NewToken(LEFT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(LEFT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 	// Lexing left square brace ends here
 
 	// Lexing right square brace starts here
 	case ']':
-		return NewToken(RIGHT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(RIGHT_SQUARE_BRACE, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		// Lexing right square brace ends here
 
 	// Lexing right square brace starts here
 	case ',':
-		return NewToken(COMMA, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(COMMA, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		// Lexing right square brace ends here
 
 	// Lexing colon starts here
 	case ':':
-		return NewToken(COLON, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+		return newToken(COLON, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 		// Lexing colon ends here
 
 	// Lexing comment starts here
@@ -112,7 +112,7 @@ func (l *Lexer) Token() Token {
 		switch nextChar {
 		case '/':
 			if !l.config.AllowLineComments {
-				return NewToken(ILLEGAL, INVALID_LINE_COMMENT, l.input[l.pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_LINE_COMMENT, l.input[l.pos:], l.line, col, nil)
 			}
 
 			for !isNewLine(l.char) && l.char != 0 {
@@ -120,14 +120,14 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.char == 0 {
-				return NewToken(COMMENT, LINE_COMMENT, l.input[pos:], l.line, col, nil)
+				return newToken(COMMENT, LINE_COMMENT, l.input[pos:], l.line, col, nil)
 			}
 
-			return NewToken(COMMENT, LINE_COMMENT, l.input[pos:l.readPos], l.line, col, l.readChar)
+			return newToken(COMMENT, LINE_COMMENT, l.input[pos:l.readPos], l.line, col, l.readChar)
 
 		case '*': // asterisk
 			if !l.config.AllowBlockComments {
-				return NewToken(ILLEGAL, INVALID_BLOCK_COMMENT, l.input[l.pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_BLOCK_COMMENT, l.input[l.pos:], l.line, col, nil)
 			}
 
 			for !(l.char == 47 && l.prev() == 42) && l.char != 0 {
@@ -135,19 +135,19 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.char == 0 {
-				return NewToken(ILLEGAL, INVALID_BLOCK_COMMENT, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_BLOCK_COMMENT, l.input[pos:], l.line, col, nil)
 			}
 
-			return NewToken(COMMENT, BLOCK_COMMENT, l.input[pos:l.readPos], l.line, col, l.readChar)
+			return newToken(COMMENT, BLOCK_COMMENT, l.input[pos:l.readPos], l.line, col, l.readChar)
 		default:
-			return NewToken(ILLEGAL, INVALID_COMMENT, l.input[l.pos:l.readPos], l.line, col, nil)
+			return newToken(ILLEGAL, INVALID_COMMENT, l.input[l.pos:l.readPos], l.line, col, nil)
 		}
 		// Lexing comment ends here
 
 	// Lexing string starts here
 	case '"', '\'': // double or single quote
 		if l.char == '\'' && !l.config.AllowSingleQuotes {
-			return NewToken(ILLEGAL, INVALID_STRING, l.input[l.pos:], l.line, col, nil)
+			return newToken(ILLEGAL, INVALID_STRING, l.input[l.pos:], l.line, col, nil)
 		}
 
 		l.readChar()
@@ -158,7 +158,7 @@ func (l *Lexer) Token() Token {
 			prevBy2 := l.prevBy(2)
 
 			if l.char == 0 {
-				return NewToken(ILLEGAL, INVALID_STRING, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_STRING, l.input[pos:], l.line, col, nil)
 			}
 
 			// Case 1: Quote is not escaped (e.g., "\"" or '\'')
@@ -169,11 +169,11 @@ func (l *Lexer) Token() Token {
 
 			if notEscaped || escapedEscape {
 				if char == '\'' {
-					return NewToken(STRING, SINGLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
+					return newToken(STRING, SINGLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
 				}
 
 				if char == '"' {
-					return NewToken(STRING, DOUBLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
+					return newToken(STRING, DOUBLE_QUOTED, l.input[pos:l.readPos], l.line, col, l.readChar)
 				}
 			}
 
@@ -195,17 +195,17 @@ func (l *Lexer) Token() Token {
 					fifth := l.peekBy(5)
 
 					if !is4HexDigits([4]byte{second, third, fourth, fifth}) {
-						return NewToken(ILLEGAL, INVALID_HEX_STRING, l.input[pos:], l.line, col, nil)
+						return newToken(ILLEGAL, INVALID_HEX_STRING, l.input[pos:], l.line, col, nil)
 					}
 
 				case '\n': // escaped newline
 					if !l.config.AllowNewlineInStrings {
-						return NewToken(ILLEGAL, INVALID_NEWLINE_STRING, l.input[pos:], l.line, col, nil)
+						return newToken(ILLEGAL, INVALID_NEWLINE_STRING, l.input[pos:], l.line, col, nil)
 					}
 
 				default:
 					if !l.config.AllowOtherEscapeChars {
-						return NewToken(ILLEGAL, INVALID_ESCAPED_STRING, l.input[pos:], l.line, col, nil)
+						return newToken(ILLEGAL, INVALID_ESCAPED_STRING, l.input[pos:], l.line, col, nil)
 					}
 				}
 			}
@@ -215,7 +215,7 @@ func (l *Lexer) Token() Token {
 	// Lexing string ends here
 
 	case 0:
-		return NewToken(EOF, NONE, nil, l.line, col, nil)
+		return newToken(EOF, NONE, nil, l.line, col, nil)
 
 	default:
 
@@ -232,7 +232,7 @@ func (l *Lexer) Token() Token {
 				l.readChar()
 				l.readChar()
 
-				return NewToken(NULL, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
+				return newToken(NULL, NONE, l.input[pos:l.readPos], l.line, col, l.readChar)
 			}
 
 			// Lexing null ends here
@@ -248,7 +248,7 @@ func (l *Lexer) Token() Token {
 				l.readChar()
 				l.readChar()
 
-				return NewToken(BOOLEAN, TRUE, l.input[pos:l.readPos], l.line, col, l.readChar)
+				return newToken(BOOLEAN, TRUE, l.input[pos:l.readPos], l.line, col, l.readChar)
 			}
 
 			// Lexing true ends here
@@ -267,7 +267,7 @@ func (l *Lexer) Token() Token {
 				l.readChar()
 				l.readChar()
 
-				return NewToken(BOOLEAN, FALSE, l.input[pos:l.readPos], l.line, col, l.readChar)
+				return newToken(BOOLEAN, FALSE, l.input[pos:l.readPos], l.line, col, l.readChar)
 			}
 
 			// Lexing false ends here
@@ -294,66 +294,66 @@ func (l *Lexer) Token() Token {
 
 			// if not does not start with 0X or 0x
 			if hasLeadingZero && !hasHexPrefix {
-				return NewToken(ILLEGAL, INVALID_LEADING_ZERO, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_LEADING_ZERO, l.input[pos:], l.line, col, nil)
 			}
 
 			if startsWithPlus(num) && !l.config.AllowLeadingPlus {
-				return NewToken(ILLEGAL, INVALID_LEADING_PLUS, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_LEADING_PLUS, l.input[pos:], l.line, col, nil)
 			}
 
 			isNaNum := isNaN(num)
 
 			if isNaNum && !l.config.AllowNaN {
-				return NewToken(ILLEGAL, INVALID_NaN, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_NaN, l.input[pos:], l.line, col, nil)
 			}
 
 			if isNaNum {
-				return NewToken(NUMBER, NaN, num, l.line, col, nil)
+				return newToken(NUMBER, NaN, num, l.line, col, nil)
 			}
 
 			isInfinity := isInf(num)
 
 			if isInfinity && !l.config.AllowInfinity {
-				return NewToken(ILLEGAL, INVALID_INF, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_INF, l.input[pos:], l.line, col, nil)
 			}
 
 			if isInfinity {
-				return NewToken(NUMBER, INF, num, l.line, col, nil)
+				return newToken(NUMBER, INF, num, l.line, col, nil)
 			}
 
 			if isInteger(num) {
-				return NewToken(NUMBER, INTEGER, num, l.line, col, nil)
+				return newToken(NUMBER, INTEGER, num, l.line, col, nil)
 			}
 
 			if startsOrEndsWithDot(num) && !l.config.AllowPointEdgeNumbers {
-				return NewToken(ILLEGAL, INVALID_POINT_EDGE_DOT, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_POINT_EDGE_DOT, l.input[pos:], l.line, col, nil)
 			}
 
 			if isFloat(num) {
-				return NewToken(NUMBER, FLOAT, num, l.line, col, nil)
+				return newToken(NUMBER, FLOAT, num, l.line, col, nil)
 			}
 
 			if isScientificNotation(num) {
-				return NewToken(NUMBER, SCI_NOT, num, l.line, col, nil)
+				return newToken(NUMBER, SCI_NOT, num, l.line, col, nil)
 			}
 
 			// 			isFlt := isFloat(num)
 
 			// if isFlt && (bytes.Contains(num, []byte("e")) || bytes.Contains(num, []byte("E"))) {
-			// 	return NewToken(NUMBER, SCI_NOT, num, l.line, col, nil)
+			// 	return newToken(NUMBER, SCI_NOT, num, l.line, col, nil)
 			// }
 
 			// if isFlt {
-			// 	return NewToken(NUMBER, FLOAT, num, l.line, col, nil)
+			// 	return newToken(NUMBER, FLOAT, num, l.line, col, nil)
 			// }
 
 			isHexDec := isHex(num)
 			if isHexDec && !l.config.AllowHexNumbers {
-				return NewToken(ILLEGAL, INVALID_HEX_NUMBER, l.input[pos:], l.line, col, nil)
+				return newToken(ILLEGAL, INVALID_HEX_NUMBER, l.input[pos:], l.line, col, nil)
 			}
 
 			if isHexDec {
-				return NewToken(NUMBER, HEX, num, l.line, col, nil)
+				return newToken(NUMBER, HEX, num, l.line, col, nil)
 			}
 
 		}
@@ -373,12 +373,12 @@ func (l *Lexer) Token() Token {
 			}
 
 			if l.config.AllowUnquoted && !startsWithDigit(l.input[pos:l.pos]) {
-				return NewToken(STRING, IDENT, l.input[pos:l.pos], l.line, col, nil)
+				return newToken(STRING, IDENT, l.input[pos:l.pos], l.line, col, nil)
 			}
 		}
 		// Lexing ident ends here
 
-		return NewToken(ILLEGAL, INVALID_CHARACTER, l.input[pos:], l.line, col, nil)
+		return newToken(ILLEGAL, INVALID_CHARACTER, l.input[pos:], l.line, col, nil)
 	}
 }
 

@@ -69,6 +69,7 @@ var (
 // JSON is a common interface implemented by all JSON types (Null, Boolean, etc.).
 type JSON interface {
 	fmt.Stringer
+	Equal(JSON) bool
 }
 
 // Null represents a JSON null value.
@@ -85,17 +86,31 @@ func newNull(Token *Token, cb func()) *Null {
 	return &Null{Token: Token}
 }
 
-func (n Null) String() string {
+func (n *Null) String() string {
 	return "\033[1mnull\033[0m"
 }
 
 // Value returns nil if the token is valid, or an error otherwise.
-func (n Null) Value() (any, error) {
+func (n *Null) Value() (any, error) {
 	if n.Token == nil {
 		return nil, ErrNotNull
 	}
 
 	return nil, nil
+}
+
+func (n *Null) Equal(n2 JSON) bool {
+	if n == nil || n2 == nil {
+		return n == n2
+	}
+
+	other, ok := AsNull(n2)
+
+	if !ok {
+		return false
+	}
+
+	return n.Token.Equal(other.Token)
 }
 
 // AsNull safely casts a JSON to a *Null.
@@ -118,7 +133,7 @@ func newBoolean(Token *Token, cb func()) *Boolean {
 	return &Boolean{Token: Token}
 }
 
-func (b Boolean) String() string {
+func (b *Boolean) String() string {
 	if b.Token.SubKind == TRUE {
 		return "\033[1mtrue\033[0m"
 	} else {
@@ -127,7 +142,7 @@ func (b Boolean) String() string {
 }
 
 // Value returns the boolean value or an error if the token is invalid.
-func (b Boolean) Value() (bool, error) {
+func (b *Boolean) Value() (bool, error) {
 	if b.Token == nil {
 		return false, ErrNotBoolean
 	}
@@ -145,6 +160,20 @@ func (b Boolean) Value() (bool, error) {
 	}
 
 	return boolVal, nil
+}
+
+func (b *Boolean) Equal(b2 JSON) bool {
+	if b == nil || b2 == nil {
+		return b == b2
+	}
+
+	other, ok := AsBoolean(b2)
+
+	if !ok {
+		return false
+	}
+
+	return b.Token.Equal(other.Token)
 }
 
 // AsBoolean safely casts a JSON to a *Boolean.
@@ -167,12 +196,12 @@ func newString(Token *Token, cb func()) *String {
 	return &String{Token: Token}
 }
 
-func (s String) String() string {
+func (s *String) String() string {
 	return (s.Token.Value()).(string)
 }
 
 // Value returns the string or an error if invalid.
-func (s String) Value() (string, error) {
+func (s *String) Value() (string, error) {
 	if s.Token == nil {
 		return "", ErrNotString
 	}
@@ -190,6 +219,20 @@ func (s String) Value() (string, error) {
 	}
 
 	return strVal, nil
+}
+
+func (s *String) Equal(s2 JSON) bool {
+	if s == nil || s2 == nil {
+		return s == s2
+	}
+
+	other, ok := AsString(s)
+
+	if !ok {
+		return false
+	}
+
+	return s.Token.Equal(other.Token)
 }
 
 // AsString safely casts a JSON to a *String.
@@ -212,12 +255,12 @@ func newNumber(Token *Token, cb func()) *Number {
 	return &Number{Token: Token}
 }
 
-func (n Number) String() string {
+func (n *Number) String() string {
 	return string((n.Token.Literal))
 }
 
 // Value attempts to parse the number as float64, depending on its subtype.
-func (n Number) Value() (float64, error) {
+func (n *Number) Value() (float64, error) {
 	if n.Token == nil {
 		return 0, ErrNotNumber
 	}
@@ -257,6 +300,20 @@ func (n Number) Value() (float64, error) {
 	}
 }
 
+func (n *Number) Equal(n2 JSON) bool {
+	if n == nil || n2 == nil {
+		return n == n2
+	}
+
+	other, ok := AsNumber(n2)
+
+	if !ok {
+		return false
+	}
+
+	return n.Token.Equal(other.Token)
+}
+
 // AsNumber safely casts a JSON to a *Number.
 func AsNumber(j JSON) (*Number, bool) {
 	number, ok := j.(*Number)
@@ -277,7 +334,7 @@ func newArray(items []JSON, cb func()) *Array {
 	return &Array{Items: items}
 }
 
-func (a Array) String() string {
+func (a *Array) String() string {
 	var builder strings.Builder
 	builder.WriteString("[")
 	for i, item := range a.Items {
@@ -291,12 +348,12 @@ func (a Array) String() string {
 	return builder.String()
 }
 
-func (a Array) Len() int {
+func (a *Array) Len() int {
 	return len(a.Items)
 }
 
 // QueryPath retrieves a nested item using a slice of string indices.
-func (a Array) QueryPath(paths ...string) (JSON, error) {
+func (a *Array) QueryPath(paths ...string) (JSON, error) {
 	if len(paths) == 0 {
 		return a, nil
 	}
@@ -320,7 +377,7 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.(type) {
-	case *Null, Null, *Boolean, Boolean, *Number, Number, *String, String:
+	case *Null, *Boolean, *Number, *String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
@@ -328,11 +385,7 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 		return val, nil
 	case *Array:
 		return val.QueryPath(rest...)
-	case Array:
-		return val.QueryPath(rest...)
 	case *Object:
-		return val.QueryPath(rest...)
-	case Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
@@ -343,14 +396,41 @@ func (a Array) QueryPath(paths ...string) (JSON, error) {
 // - item: the current element
 // - index: the index of the element
 // - array: the array being iterated
-type ArrayCallback func(item JSON, index int, array Array)
+type ArrayCallback func(item JSON, index int, array *Array)
 
 // ForEach calls the given callback for each item in the array.
 // It provides the item, its index, and the array itself.
-func (a Array) ForEach(cb ArrayCallback) {
+func (a *Array) ForEach(cb ArrayCallback) {
 	for i, item := range a.Items {
 		cb(item, i, a)
 	}
+}
+
+func (a *Array) Equal(a2 JSON) bool {
+	if a == nil || a2 == nil {
+		return a == a2
+	}
+
+	other, ok := AsArray(a2)
+
+	if !ok {
+		return false
+	}
+
+	if a.Len() != other.Len() {
+		return false
+	}
+
+	for i, item := range a.Items {
+		item2 := other.Items[i]
+
+		if !item.Equal(item2) {
+			return false
+		}
+
+	}
+
+	return true
 }
 
 // AsArray safely casts a JSON to a *Array.
@@ -363,6 +443,18 @@ func AsArray(j JSON) (*Array, bool) {
 type KeyValue struct {
 	key   []byte
 	value JSON
+}
+
+func (kv *KeyValue) Equal(kv2 *KeyValue) bool {
+	if kv == nil || kv2 == nil {
+		return kv == kv2
+	}
+
+	if !bytes.Equal(kv.key, kv2.key) {
+		return false
+	}
+
+	return kv.value.Equal(kv2.value)
 }
 
 // Object represents a JSON object.
@@ -379,7 +471,7 @@ func newObject(properties []KeyValue, cb func()) *Object {
 	return &Object{Properties: properties}
 }
 
-func (o Object) String() string {
+func (o *Object) String() string {
 	var builder strings.Builder
 	builder.WriteString("{")
 	length := len(o.Properties)
@@ -394,12 +486,12 @@ func (o Object) String() string {
 	return builder.String()
 }
 
-func (o Object) Len() int {
+func (o *Object) Len() int {
 	return len(o.Properties)
 }
 
 // QueryPath retrieves a nested value via key-based path traversal.
-func (o Object) QueryPath(paths ...string) (JSON, error) {
+func (o *Object) QueryPath(paths ...string) (JSON, error) {
 	if len(paths) == 0 {
 		return o, nil
 	}
@@ -419,18 +511,14 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 	rest := paths[1:]
 
 	switch val := item.value.(type) {
-	case *Null, Null, *Boolean, Boolean, *Number, Number, *String, String:
+	case *Null, *Boolean, *Number, *String:
 		if len(rest) > 0 {
 			return nil, ErrQueryExceedsDepth
 		}
 		return val, nil
 	case *Array:
 		return val.QueryPath(rest...)
-	case Array:
-		return val.QueryPath(rest...)
 	case *Object:
-		return val.QueryPath(rest...)
-	case Object:
 		return val.QueryPath(rest...)
 	default:
 		return nil, ErrInvalidJSONType
@@ -441,14 +529,36 @@ func (o Object) QueryPath(paths ...string) (JSON, error) {
 // - key: the property's key as a byte slice
 // - value: the property's value
 // - object: the object being iterated
-type ObjectCallback func(key []byte, value JSON, object Object)
+type ObjectCallback func(key []byte, value JSON, object *Object)
 
 // ForEach calls the given callback for each key-value pair in the object.
 // It provides the key, value, and the object itself.
-func (o Object) ForEach(cb ObjectCallback) {
+func (o *Object) ForEach(cb ObjectCallback) {
 	for _, prop := range o.Properties {
 		cb(prop.key, prop.value, o)
 	}
+}
+
+func (o *Object) Equal(o2 JSON) bool {
+	other, ok := AsObject(o2)
+
+	if !ok {
+		return false
+	}
+
+	if o.Len() != other.Len() {
+		return false
+	}
+
+	for i, prop := range o.Properties {
+		prop2 := other.Properties[i]
+
+		if !prop.Equal(&prop2) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // AsObject safely casts a JSON to a *Object.

@@ -1,6 +1,7 @@
 package jsonvx
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -152,9 +153,9 @@ type Token struct {
 	Column  int          // The column position in the line (0-based index).
 }
 
-// NewToken creates and returns a new Token.
+// newToken creates and returns a new Token.
 // If cb is non-nil, it is called during token creation.
-func NewToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) Token {
+func newToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) Token {
 	if cb != nil {
 		cb()
 	}
@@ -168,8 +169,16 @@ func NewToken(kind TokenKind, subKind TokenSubKind, literal []byte, line, start 
 	}
 }
 
+// newTokenPtr creates and returns a pointer to a new Token.
+// If cb is non-nil, it is called during token creation.
+func newTokenPtr(kind TokenKind, subKind TokenSubKind, literal []byte, line, start int, cb func()) *Token {
+	token := newToken(kind, subKind, literal, line, start, cb)
+
+	return &token
+}
+
 // String returns a human-readable representation of the token.
-func (t Token) String() string {
+func (t *Token) String() string {
 	return fmt.Sprintf(
 		"Token{Kind: %s, SubKind: %s, Literal: %s, Line: %d, Column: %d}",
 		t.Kind,
@@ -180,7 +189,7 @@ func (t Token) String() string {
 	)
 }
 
-func (t Token) Value() any {
+func (t *Token) Value() any {
 	switch t.Kind {
 	case NULL:
 		return nil
@@ -216,6 +225,18 @@ func (t Token) Value() any {
 	default:
 		return nil
 	}
+}
+
+func (t *Token) Equal(t2 *Token) bool {
+	if t == nil || t2 == nil {
+		return t == t2
+	}
+
+	return t.Kind == t2.Kind &&
+		t.SubKind == t2.SubKind &&
+		bytes.Equal(t.Literal, t2.Literal) &&
+		t.Line == t2.Line &&
+		t.Column == t2.Column
 }
 
 // Tokens is a slice of Token.
@@ -324,135 +345,3 @@ func (tks Tokens) Split() ([][2]int, error) {
 
 	return streams, nil
 }
-
-// func (tks Tokens) Split() ([][2]int, int, int, error) {
-// 	count := 0
-// 	streams := [][2]int{}
-// 	maxArrayLen := 0
-// 	maxMapLen := 0
-
-// 	for count < len(tks) {
-// 		token := tks[count]
-// 		switch token.Kind {
-// 		case NULL, BOOLEAN, STRING, NUMBER:
-// 			streams = append(streams, [2]int{count, count})
-// 			count++
-// 		case COMMENT, WHITESPACE, EOF:
-// 			count++
-// 		case LEFT_SQUARE_BRACE:
-// 			start := count
-// 			count++
-// 			lc := 1
-// 			rc := 0
-// 			elementCount := 0
-// 			insideValue := false
-
-// 			if count < len(tks) && tks[count].Kind == RIGHT_SQUARE_BRACE {
-// 				rc++
-// 				count++
-// 			}
-
-// 			for lc != rc {
-// 				if count >= len(tks) {
-// 					index := count - 1
-// 					streams = append(streams, [2]int{start, index})
-// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
-// 					}
-// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedArrayBrackets
-// 				}
-
-// 				tok := tks[count]
-
-// 				if tok.Kind == LEFT_SQUARE_BRACE {
-// 					lc++
-// 				} else if tok.Kind == RIGHT_SQUARE_BRACE {
-// 					rc++
-// 				} else if tok.Kind == COMMA {
-// 					if insideValue {
-// 						elementCount++
-// 						insideValue = false
-// 					}
-// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
-// 					insideValue = true
-// 				}
-
-// 				count++
-// 			}
-
-// 			if insideValue {
-// 				elementCount++
-// 			}
-
-// 			if elementCount > maxArrayLen {
-// 				maxArrayLen = elementCount
-// 			}
-
-// 			streams = append(streams, [2]int{start, count - 1})
-// 		case LEFT_CURLY_BRACE:
-// 			start := count
-// 			count++
-// 			lc := 1
-// 			rc := 0
-// 			pairCount := 0
-// 			expectingKey := true
-// 			keySeen := false
-
-// 			if count < len(tks) && tks[count].Kind == RIGHT_CURLY_BRACE {
-// 				rc++
-// 				count++
-// 			}
-
-// 			for lc != rc {
-// 				if count >= len(tks) {
-// 					index := count - 1
-// 					streams = append(streams, [2]int{start, index})
-// 					if index < len(tks) && tks[index].Kind == ILLEGAL {
-// 						return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
-// 					}
-// 					return streams, maxArrayLen, maxMapLen, ErrUnbalancedObjectBrackets
-// 				}
-
-// 				tok := tks[count]
-
-// 				if tok.Kind == LEFT_CURLY_BRACE {
-// 					lc++
-// 				} else if tok.Kind == RIGHT_CURLY_BRACE {
-// 					rc++
-// 				} else if tok.Kind == COLON && keySeen {
-// 					expectingKey = false
-// 				} else if tok.Kind == COMMA {
-// 					if !expectingKey {
-// 						pairCount++
-// 						expectingKey = true
-// 						keySeen = false
-// 					}
-// 				} else if tok.Kind != COMMENT && tok.Kind != WHITESPACE {
-// 					if expectingKey {
-// 						keySeen = true
-// 					}
-// 				}
-
-// 				count++
-// 			}
-
-// 			if keySeen && !expectingKey {
-// 				pairCount++
-// 			}
-
-// 			if pairCount > maxMapLen {
-// 				maxMapLen = pairCount
-// 			}
-
-// 			streams = append(streams, [2]int{start, count - 1})
-// 		case ILLEGAL:
-// 			streams = append(streams, [2]int{count, count})
-// 			return streams, maxArrayLen, maxMapLen, ErrIllegalToken
-// 		default:
-// 			streams = append(streams, [2]int{count, count})
-// 			return streams, maxArrayLen, maxMapLen, ErrUnexpectedToken
-// 		}
-// 	}
-
-// 	return streams, maxArrayLen, maxMapLen, nil
-// }

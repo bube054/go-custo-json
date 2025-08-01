@@ -97,28 +97,28 @@ Using the `json` data above, we can query for specific values using the `QueryPa
 
 ```go
 // Get first name
-node, _ = rootObj.QueryPath("name", "first") // => "Tom"
+strNode, _ := rootObj.QueryPath("name", "first") // => "Tom"
 
 // get children array
-node, _ = rootObj.QueryPath("children") // => ["Sara", "Alex", "Jack"]
+arrayNode, _ := rootObj.QueryPath("children") // => ["Sara", "Alex", "Jack"]
 
 // Get second child
-node, _ = rootObj.QueryPath("children", "1") // => "Alex"
+strNode, _ = rootObj.QueryPath("children", "1") // => "Alex"
 
 // Get favorite movie (with dot in key name)
-node, _ = rootObj.QueryPath("fav.movie") // => "Deer Hunter"
+strNode, _ = rootObj.QueryPath("fav.movie") // => "Deer Hunter"
 
 // Get first friend object
-node, _ = rootObj.QueryPath("friends", "0")
+objNode, _ := rootObj.QueryPath("friends", "0") // => {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]}
 
 // Get last name of first friend
-node, _ = rootObj.QueryPath("friends", "0", "last") // => "Murphy"
+strNode, _ = rootObj.QueryPath("friends", "0", "last") // => "Murphy"
 
 // Get second social network of second friend
-node, _ = rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
+strNode, _ = rootObj.QueryPath("friends", "1", "nets", "1") // => "tw"
 
 // Get age of third friend
-node, _ = rootObj.QueryPath("friends", "2", "age") // => 47
+nuNode, _ := rootObj.QueryPath("friends", "2", "age") // => 47
 ```
 
 ## Configuring The Parser
@@ -230,9 +230,10 @@ This example shows how to parse a `JSON` object using `jsonvx`, access its field
 Behavior
 
 - `Objects` are stored as an `array` of key-value pairs using the `jsonvx.KeyValue` struct.
-- Keys are stored as `[]byte` and `sorted` `lexicographically` for faster value retrieval.
+- Keys are stored as `[]byte` and `sorted` `lexicographically` for `log(n)` value retrieval.
 - Each key-value pair is accessible using the `ForEach` method.
 - Mixed value types (e.g., `numbers`, `strings`, `objects`) are supported.
+- Duplicate keys are included, but the first key-value pair is used.
 
 ```go
 parser := jsonvx.NewParser([]byte(`{"name": "Alice", "age": 30}`), jsonvx.NewParserConfig())

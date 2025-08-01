@@ -7,19 +7,20 @@ import (
 )
 
 func TestJSONQuery(t *testing.T) {
-	data := []byte(`{
-	  "name": {"first": "Tom", "last": "Anderson"},
-	  "age": 37,
-	  "children": ["Sara", "Alex", "Jack"],
-	  "fav.movie": "Deer Hunter",
-	  "friends": [
-	    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
-	    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
-	    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
-	  ]
-	}`)
+	// data := []byte(`{
+	//   "name": {"first": "Tom", "last": "Anderson"},
+	//   "age": 37,
+	//   "children": ["Sara", "Alex", "Jack"],
+	//   "fav.movie": "Deer Hunter",
+	//   "friends": [
+	//     {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+	//     {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+	//     {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+	//   ]
+	// }`)
 
-	parser := NewParser((data), NewParserConfig())
+	parser := NewParser([]byte(`{"key": "value1", "bube": "attah", "key": "value2", "key": "value3"}`), NewParserConfig())
+	// parser := NewParser((data), NewParserConfig())
 	// parser := NewParser([]byte("\"Hello World\""), NewParserConfig())
 
 	// parse the JSON
@@ -34,7 +35,7 @@ func TestJSONQuery(t *testing.T) {
 		t.Fatalf("expected root node to be an object, but got: %s", err.Error())
 	}
 
-	node, _ = rootObj.QueryPath("friends", "0")
+	node, _ = rootObj.QueryPath("key")
 
 	fmt.Println(node, reflect.TypeOf(node))
 
