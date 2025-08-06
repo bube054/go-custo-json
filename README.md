@@ -43,7 +43,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/your/module/jsonvx"
+	"github.com/bube054/jsonvx"
 )
 
 func main() {
